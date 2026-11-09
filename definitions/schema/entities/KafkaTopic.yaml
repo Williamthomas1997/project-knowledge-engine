@@ -1,0 +1,10 @@
+kind: EntityType
+name: KafkaTopic
+version: 1.0.0
+description: A Kafka topic, by name as written in code (placeholders kept as written).
+category: technical
+properties:
+  name: { type: string, required: true }
+  placeholder: { type: boolean }
+identity: { strategy: naturalKey, naturalKey: [name] }
+retrieval: { displayProperty: name }

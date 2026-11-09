@@ -170,6 +170,10 @@ public class GraphTransactions {
                     UNWIND $rows AS row
                     MATCH (ev:ChangeEvent {seq: row.seq}), (s:SchemaDefinition {pke_id: row.subjectId})
                     CREATE (ev)-[:ABOUT]->(s)""");
+            link(rows, PendingEvent.SubjectKind.SOURCE, """
+                    UNWIND $rows AS row
+                    MATCH (ev:ChangeEvent {seq: row.seq}), (s:SourceArtifact {pke_id: row.subjectId})
+                    CREATE (ev)-[:ABOUT]->(s)""");
             tx.run("MATCH (s:Sequence {name: $name}) SET s.value = $value",
                     Map.of("name", SEQUENCE_NAME, "value", seq)).consume();
         }

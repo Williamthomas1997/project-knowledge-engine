@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: CALLS_API
+version: 1.0.0
+description: The journey step calls the API operation.
+category: business
+sourceTypes: [JourneyStep]
+targetTypes: [ApiOperation]
+evidence: { required: true }
+policy: { discovery: [deterministic, manual], approval: auto }
+queryHints: { direction: out, weight: 0.9 }

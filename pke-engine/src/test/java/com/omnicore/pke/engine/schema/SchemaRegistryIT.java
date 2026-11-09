@@ -111,12 +111,21 @@ class SchemaRegistryIT extends KnowledgeIT {
     }
 
     @Test
+    void breakingChangesAreAllowedOnlyWhileTheTypeHasNoInstances() {
+        schemaService.register(REGULATORY_CONTROL, Format.YAML, "t");
+        String noInstancesYet = REGULATORY_CONTROL.replace("1.0.0", "2.0.0").replace("  title: { type: string, required: true }\n", "");
+        assertThat(schemaService.register(noInstancesYet, Format.YAML, "t").outcome()).isEqualTo(SchemaService.Outcome.REGISTERED);
+    }
+
+    @Test
     void breakingChangesAreRejectedWithTheReason() {
         schemaService.register(REGULATORY_CONTROL, Format.YAML, "t");
+        writer.apply(ChangeSet.of(new EntityWrite("RegulatoryControl", null, Map.of("controlId", "C-1", "title", "x"),
+                EpistemicStatus.OBSERVED, null, null)), "t");
         String removesTitle = REGULATORY_CONTROL.replace("1.0.0", "2.0.0")
                 .replace("  title: { type: string, required: true }\n", "");
         assertThatThrownBy(() -> schemaService.register(removesTitle, Format.YAML, "t"))
-                .isInstanceOf(ConflictException.class).hasMessageContaining("'title' removed");
+                .isInstanceOf(ConflictException.class).hasMessageContaining("'title' removed").hasMessageContaining("1 existing instance");
         var report = schemaService.validate(removesTitle, Format.YAML);
         assertThat(report.valid()).isFalse();
         assertThat(report.breakingChanges()).isNotEmpty();

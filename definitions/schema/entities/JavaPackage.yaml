@@ -1,0 +1,10 @@
+kind: EntityType
+name: JavaPackage
+version: 1.0.0
+description: A Java package in a repository.
+category: technical
+properties:
+  repository: { type: string, required: true }
+  name: { type: string, required: true }
+identity: { strategy: naturalKey, naturalKey: [repository, name] }
+retrieval: { displayProperty: name }

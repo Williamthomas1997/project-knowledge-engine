@@ -1,19 +1,28 @@
 kind: EntityType
 name: ApiOperation
-version: 1.0.0
-displayName: API operation
-description: One HTTP operation of a service. Gateway headers and field structure are added in M2 (ARCHITECT-HANDOFF item 9).
+version: 2.0.0
+description: "One HTTP operation. layer=gateway is the API as clients call it (identity: method, path template and the gateway identity headers); layer=service is a controller mapping inside a service. Holds structure only, never values."
 category: technical
 properties:
-  service: { type: string, required: true }
+  layer: { type: string, required: true, enum: [gateway, service] }
+  service: { type: string, required: true, description: Service name for layer=service; 'gateway' for layer=gateway }
   httpMethod: { type: string, required: true, enum: [GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS] }
   pathTemplate: { type: string, required: true, pattern: "^/.*" }
+  gatewayKey: { type: string, required: true, description: "Identity header codes joined as moduleId|subModuleId|serviceId|screenId; empty for layer=service" }
+  moduleId: { type: string }
+  subModuleId: { type: string }
+  serviceId: { type: string }
+  screenId: { type: string }
+  units: { type: string-list, description: unit header codes seen }
+  channels: { type: string-list, description: channel header codes seen }
+  otherHeaders: { type: string-list, description: Names of other headers sent; values are never stored }
+  pathParameters: { type: string-list }
+  queryParameters: { type: string-list }
+  requestFields: { type: text, description: Request body structure as JSON (names and types only) }
+  responseFields: { type: text, description: Response body structure as JSON (names and types only) }
   operationId: { type: string }
+  routeName: { type: string }
   summary: { type: text }
-identity:
-  strategy: naturalKey
-  naturalKey: [service, httpMethod, pathTemplate]
-embedding:
-  indexFields: [summary]
-retrieval:
-  displayProperty: pathTemplate
+identity: { strategy: naturalKey, naturalKey: [layer, service, httpMethod, pathTemplate, gatewayKey] }
+embedding: { indexFields: [summary] }
+retrieval: { displayProperty: pathTemplate }

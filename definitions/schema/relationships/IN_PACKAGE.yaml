@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: IN_PACKAGE
+version: 1.0.0
+description: The type is declared in the package.
+category: technical
+sourceTypes: [JavaClass]
+targetTypes: [JavaPackage]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.2 }

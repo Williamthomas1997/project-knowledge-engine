@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: EXTENDS
+version: 1.0.0
+description: The type extends another type of the same repository.
+category: technical
+sourceTypes: [JavaClass]
+targetTypes: [JavaClass]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.5 }

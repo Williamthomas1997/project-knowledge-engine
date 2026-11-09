@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: IMPLEMENTS_INTERFACE
+version: 1.0.0
+description: The type implements an interface of the same repository.
+category: technical
+sourceTypes: [JavaClass]
+targetTypes: [JavaClass]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.5 }

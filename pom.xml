@@ -37,7 +37,9 @@
         <archunit.version>1.5.1</archunit.version>
         <neo4j.test.image>neo4j:2026.10.1-community</neo4j.test.image>
 
-        <!-- Pinned now, added as dependencies in later milestones -->
+        <!-- Ingestion (M2) -->
+        <commonmark.version>0.32.0</commonmark.version>
+        <!-- Pinned, used from M2 on -->
         <javaparser.version>3.28.2</javaparser.version>
         <jgit.version>7.8.1.202611041320-r</jgit.version>
         <tika.version>4.2.0</tika.version>
@@ -59,6 +61,13 @@
                 <groupId>com.omnicore.pke</groupId>
                 <artifactId>pke-spi</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-bom</artifactId>
+                <version>${tika.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>

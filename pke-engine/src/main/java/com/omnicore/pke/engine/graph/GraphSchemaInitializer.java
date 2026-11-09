@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Creates the engine's constraints and indexes at startup (idempotent). Only features available in Neo4j
- * Community are used (ADR-008): node uniqueness constraints and range indexes. Required properties are enforced
+ * Community are used (ADR-008): node uniqueness constraints, range indexes and a fulltext index. Required properties are enforced
  * by the schema validator, not by existence or type constraints.
  */
 @Component
@@ -29,12 +29,21 @@ public class GraphSchemaInitializer implements ApplicationRunner {
             "CREATE CONSTRAINT pke_change_event_seq IF NOT EXISTS FOR (n:ChangeEvent) REQUIRE n.seq IS UNIQUE",
             "CREATE CONSTRAINT pke_schema_definition_id IF NOT EXISTS FOR (n:SchemaDefinition) REQUIRE n.pke_id IS UNIQUE",
             "CREATE CONSTRAINT pke_sequence_name IF NOT EXISTS FOR (n:Sequence) REQUIRE n.name IS UNIQUE",
+            "CREATE CONSTRAINT pke_alias_id IF NOT EXISTS FOR (n:Alias) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_source_artifact_id IF NOT EXISTS FOR (n:SourceArtifact) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_source_version_id IF NOT EXISTS FOR (n:SourceVersion) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_section_id IF NOT EXISTS FOR (n:Section) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_ingestion_run_id IF NOT EXISTS FOR (n:IngestionRun) REQUIRE n.pke_id IS UNIQUE",
             "CREATE INDEX pke_entity_type IF NOT EXISTS FOR (n:Entity) ON (n.pke_type)",
             "CREATE INDEX pke_assertion_subject IF NOT EXISTS FOR (n:Assertion) ON (n.pke_subjectId)",
             "CREATE INDEX pke_assertion_object IF NOT EXISTS FOR (n:Assertion) ON (n.pke_objectId)",
             "CREATE INDEX pke_assertion_status IF NOT EXISTS FOR (n:Assertion) ON (n.pke_status)",
             "CREATE INDEX pke_change_event_subject IF NOT EXISTS FOR (n:ChangeEvent) ON (n.subjectId)",
-            "CREATE INDEX pke_schema_definition_name IF NOT EXISTS FOR (n:SchemaDefinition) ON (n.kind, n.name)");
+            "CREATE INDEX pke_schema_definition_name IF NOT EXISTS FOR (n:SchemaDefinition) ON (n.kind, n.name)",
+            "CREATE INDEX pke_evidence_scope IF NOT EXISTS FOR (n:Evidence) ON (n.sourceArtifactId, n.scope)",
+            "CREATE INDEX pke_source_artifact_key IF NOT EXISTS FOR (n:SourceArtifact) ON (n.key)",
+            "CREATE INDEX pke_ingestion_run_created IF NOT EXISTS FOR (n:IngestionRun) ON (n.createdAt)",
+            "CREATE FULLTEXT INDEX pke_section_text IF NOT EXISTS FOR (n:Section) ON EACH [n.heading, n.text]");
 
     private final GraphSessions sessions;
 

@@ -18,6 +18,7 @@ public final class PkeIds {
     public static final UUID RELATIONSHIP_NAMESPACE = UUID.fromString("6f1d3c3e-4c1b-5a43-9d55-0c2d7e1f8a02");
     public static final UUID EVIDENCE_NAMESPACE = UUID.fromString("6f1d3c3e-4c1b-5a43-9d55-0c2d7e1f8a03");
     public static final UUID VERSION_NAMESPACE = UUID.fromString("6f1d3c3e-4c1b-5a43-9d55-0c2d7e1f8a04");
+    public static final UUID SOURCE_NAMESPACE = UUID.fromString("6f1d3c3e-4c1b-5a43-9d55-0c2d7e1f8a05");
 
     private static final char SEPARATOR = '\u001F';
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -38,6 +39,16 @@ public final class PkeIds {
 
     public static String evidenceId(String subjectId, List<?> evidenceKey) {
         return uuidV5(EVIDENCE_NAMESPACE, join(subjectId, evidenceKey)).toString();
+    }
+
+    /** Id of a source artifact (document, repository) from its logical key, e.g. {@code repo:transfer-service}. */
+    public static String sourceArtifactId(String logicalKey) {
+        return uuidV5(SOURCE_NAMESPACE, logicalKey).toString();
+    }
+
+    /** Id of one version of a source artifact (a content hash or a Git commit). */
+    public static String sourceVersionId(String logicalKey, String version) {
+        return uuidV5(SOURCE_NAMESPACE, join(logicalKey, List.of(version))).toString();
     }
 
     public static String versionId(String subjectId, long version) {

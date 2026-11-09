@@ -22,6 +22,8 @@ public abstract class KnowledgeIT {
     @DynamicPropertySource
     static void neo4j(DynamicPropertyRegistry registry) {
         Neo4jTestDatabase.registerSpringProperties(registry);
+        registry.add("pke.ingestion.route-export-files", () -> DemoCorpus.file("routes/ocs_t_gateway_api_route.sql").toString());
+        registry.add("pke.data-dir", () -> System.getProperty("java.io.tmpdir") + "/pke-it-data");
     }
 
     @Autowired

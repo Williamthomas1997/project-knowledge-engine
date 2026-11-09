@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: INJECTS
+version: 1.0.0
+description: The type receives the other type by dependency injection.
+category: technical
+sourceTypes: [JavaClass]
+targetTypes: [JavaClass]
+properties:
+  via: { type: string, enum: [field, constructor, setter] }
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.6 }

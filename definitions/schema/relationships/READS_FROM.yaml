@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: READS_FROM
+version: 1.0.0
+description: The method reads the table (through a JPA repository).
+category: technical
+sourceTypes: [JavaMethod]
+targetTypes: [DatabaseTable]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.6 }

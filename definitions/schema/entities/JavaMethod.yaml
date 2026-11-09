@@ -1,7 +1,6 @@
 kind: EntityType
 name: JavaMethod
-version: 1.0.0
-displayName: Java method
+version: 1.1.0
 description: A method or constructor, identified by repository, declaring type and erased signature.
 category: technical
 properties:
@@ -11,10 +10,11 @@ properties:
   summary: { type: text }
   lineStart: { type: integer }
   lineEnd: { type: integer }
-identity:
-  strategy: naturalKey
-  naturalKey: [repository, fqcn, signature]
-embedding:
-  indexFields: [summary]
-retrieval:
-  displayProperty: signature
+  returnType: { type: string }
+  annotations: { type: string-list }
+  bodyHash: { type: string, description: Hash of the normalised body; used for rename detection }
+  unresolvedCalls: { type: string-list, description: Calls the symbol solver could not resolve (never guessed) }
+  test: { type: boolean }
+identity: { strategy: naturalKey, naturalKey: [repository, fqcn, signature] }
+embedding: { indexFields: [summary] }
+retrieval: { displayProperty: signature }

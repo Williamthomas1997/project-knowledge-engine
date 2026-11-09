@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: DECLARES
+version: 1.0.0
+description: The type declares the method or constructor.
+category: technical
+sourceTypes: [JavaClass]
+targetTypes: [JavaMethod]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.4 }

@@ -4,9 +4,12 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M1, foundation.** The schema registry (YAML definitions validated by JSON Schema 2020-12), the single
-graph writer (entities, relationships, evidence, versions and change events in one transaction) and REST APIs are
-done. Ingestion, retrieval and AI arrive in M2–M4. See `docs/IMPLEMENTATION_PLAN.md` §13 and ADR-007 for the
+Status: **M2, deterministic ingestion.** On top of the M1 foundation (schema registry, single graph writer with
+history in one transaction, REST): documents (Markdown, Word, PDF, HTML) as versioned sources with searchable
+sections; Java repositories through Git with incremental runs (calls, injection, endpoints, configuration, Kafka,
+JPA, tests, error codes, log statements; removed relationships invalidated with history, renames keep identity);
+user journeys from Postman, Java/TestNG, Gatling and JMeter; gateway routes resolved to handler methods. No LLM
+yet: AI and retrieval arrive in M3–M4. See `docs/IMPLEMENTATION_PLAN.md` §13 and ADR-007 for the
 milestones, and `docs/reports/` for what each milestone actually delivered.
 
 ## Prerequisites
@@ -91,6 +94,23 @@ curl localhost:8080/api/history/events
 curl localhost:8080/api/integrity
 ```
 
+### Ingest a repository and a document
+
+```bash
+# register a local Git repository (read-only; analysis reads committed content) and ingest it
+curl -X POST localhost:8080/api/sources/repositories -H 'Content-Type: application/json' \
+     -d '{"name":"transfer-service","path":"/path/to/repo","serviceName":"transfer-service"}'
+curl -X POST 'localhost:8080/api/ingestion/runs?wait=true' -H 'Content-Type: application/json' \
+     -d '{"kind":"REPOSITORY","target":"transfer-service","mode":"FULL"}'      # later: "INCREMENTAL"
+# upload a document version
+curl -F file=@demo/brd/international-transfer-brd.md localhost:8080/api/sources/documents
+curl 'localhost:8080/api/sources/sections/search?q=currency'
+curl localhost:8080/api/journeys
+```
+
+Gateway route exports (the `ocs_t_gateway_api_route` INSERT scripts) are read from
+`pke.ingestion.route-export-files`; see `IngestionProperties` for all ingestion settings.
+
 The full endpoint list is in [`docs/api/REST.md`](docs/api/REST.md). **There is no authentication before M6, and
 `/actuator/health` shows details.** Keep the service on localhost.
 
@@ -101,7 +121,8 @@ pke-spi/       plugin contracts (plain Java, no Spring, enforced)
 pke-engine/    the Spring Boot application (packages listed in IMPLEMENTATION_PLAN §1)
 pke-plugins/   Level-3 plugins, one sub-module each
 definitions/   Git-versioned definitions: meta/ (JSON Schema 2020-12), schema/ (entity + relationship types)
-demo/ eval/    synthetic demo project and evaluation datasets (M2, M3)
+demo/          synthetic corpus used by all tests: BRD (.md/.docx), transfer service + change commits, QA project, routes
+eval/          evaluation datasets (M4)
 docker/        compose file for a local Neo4j
 docs/          spec, plan, ADRs (adr/), REST reference (api/), milestone prompts and reports
 ```

@@ -1,0 +1,9 @@
+kind: EntityType
+name: DatabaseTable
+version: 1.0.0
+description: A database table, by upper-case name.
+category: technical
+properties:
+  name: { type: string, required: true }
+identity: { strategy: naturalKey, naturalKey: [name] }
+retrieval: { displayProperty: name }

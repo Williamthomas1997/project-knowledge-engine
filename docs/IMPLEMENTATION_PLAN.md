@@ -161,11 +161,15 @@ removes the outbox problem for graph ↔ history.
   generation + app release (`git describe`). Snapshot diff = set difference of versions valid
   at the two `seq`s, grouped by type, with evidence.
 
-**Graph ↔ vector index**: chunks live in Neo4j too, so chunk text/metadata is transactional
-with the source version. Embeddings call an external API and are therefore asynchronous:
-each chunk carries `embeddingStatus` per index generation; ingestion reports
-`COMPLETED`, `PARTIAL (index pending/failed)` or `FAILED` — never "success" while embeddings
-are outstanding. A retry job sweeps `PENDING/FAILED`.
+**Graph ↔ vector store** (superseded by ADR-007 §1–§3, binding from M4): the graph is the system of
+record and vectors are a derived, pluggable projection (`pke.vector.provider=neo4j|qdrant`). Each embedded
+field has its own collection (`<Type>_<field>`, declared by `embedding.indexFields`, stored since M1), and
+every collection is also a `(:VectorCollection)` node. A graph write that touches an indexed field creates an
+`(:IndexTask)` in the same transaction (outbox); an `IndexWorker` applies tasks idempotently with retries.
+Ingestion is `COMPLETED` only when its tasks are done, otherwise `PARTIAL`/`FAILED`; a reconciliation job
+repairs differences; embedding generations are switched after evaluation, and re-embedding never creates
+knowledge events. **Raw document sections are never embedded** (ADR-007 §4): they are stored as `:Section`
+nodes with a fulltext index (M2) and BRDs are rewritten into knowledge cards (M3).
 
 ---
 
@@ -190,24 +194,34 @@ are outstanding. A retry job sweeps `PENDING/FAILED`.
 
 ## 7. Ingestion and extraction
 
-| Source | Parser (deterministic first) | AI used for |
-|---|---|---|
-| PDF / DOCX / XLSX / HTML | Apache Tika (+ Spring AI document readers), keeps headings, pages, tables | Requirement/rule extraction, classification |
-| Markdown / text | CommonMark structural parser | same |
-| Scanned PDF | `OcrParser` extension point (Tesseract optional) | — |
-| Java | **JavaParser + symbol solver**: packages, types, methods, imports, inheritance, calls, annotations, Spring endpoints, injection, `@Value`/`@ConfigurationProperties`, `@KafkaListener`/`KafkaTemplate`, JPA `@Entity/@Table`, tests→targets | Summaries only |
-| OpenAPI / Swagger | swagger-parser | — |
-| SQL DDL / Liquibase / release scripts | JSqlParser | — |
-| `application*.yml`, `.properties` | SnakeYAML | — |
-| Git | JGit: commits, diffs, renames, branches/tags | — |
+Implemented in M2 (ADR-011 sources and incremental ingestion, ADR-012 API identity, journeys and routes).
+No LLM is used; everything below is deterministic.
 
-Incremental: `(sourceLogicalKey, contentHash, parserVersion, pipelineVersion, schemaVersion, embeddingGen)`
-fingerprint decides what to redo; Java uses changed-file sets from commit diffs plus a
-reverse-dependency set for call edges into changed types.
+| Source | Parser (deterministic first) | Status |
+|---|---|---|
+| PDF / DOCX / XLSX / PPTX / HTML | Apache Tika 4 (pdf, microsoft, html, text modules): headings, paragraphs, table rows, PDF pages → `:Section` | M2 |
+| Markdown / text | CommonMark: one section per heading with its heading path | M2 |
+| Scanned PDF | `OcrProvider` extension point; without one the version is stored as `OCR_REQUIRED` | M2 (no OCR engine) |
+| Java | JavaParser + symbol solver, with deterministic static-dispatch fallback: packages, types, methods, imports, inheritance, `CALLS` (unresolved calls listed, never guessed), annotations, Spring endpoints → service `ApiOperation`, `INJECTS`, `USES_CONFIGURATION`, Kafka, JPA `MAPS_TO`/`READS_FROM`/`WRITES_TO`, `TESTED_BY`, `THROWS_ERROR`, `LOGS` | M2 |
+| Release SQL (error configuration) | own quote-aware `INSERT` reader (`OCS_T_ERROR_CONFIG.OCS_ERR_CODE`, configurable) | M2 |
+| Journeys (ADR-007 §6) | `JourneySourceAdapter` SPI: Postman, Java journeys + Gatling (static interpretation), JMeter, TestNG suites | M2; prompt interview in M6 |
+| Gateway routes | `RouteResolver`: route export (`ocs_t_gateway_api_route` INSERTs) then Spring mapping; no route nodes | M2 |
+| OpenAPI / Swagger, `application*.yml` | swagger-parser, SnakeYAML | later |
+| Git | JGit: commits (as source versions), diffs, renames; analysis reads committed content only | M2 |
+
+Incremental: since the last processed commit, changed Java files plus the reverse-dependency set (files whose
+current relationships point into changed types or methods). Each scope (file) is re-extracted as a whole and
+retracted: relationships it no longer produces are invalidated with history. Renames keep `pke_id` through
+`:Alias` nodes. Unchanged content writes nothing (scoped evidence, ADR-011).
 
 ---
 
-## 8. Retrieval and context generation (ADR-005)
+## 8. Retrieval and context generation (ADR-005, refined by ADR-007 §7)
+
+> ADR-007 §7 is binding from M4: search the `CollectionCatalog` first to choose collections, search them
+> (vector + fulltext, currently valid), expand from the hits with **parameterised query templates** (journey,
+> impact, implementation trace, requirement trace, shared logic, log trail) and fall back to guarded,
+> read-only LLM-written Cypher only when no template fits. The original sketch follows.
 
 1. **Query understanding** (AI optional): extract terms and candidate entity types.
 2. **Entity linking**: Neo4j fulltext over names/aliases + vector over entity summaries.
@@ -314,16 +328,18 @@ roles `READER`, `CONTRIBUTOR`, `SCHEMA_ADMIN`, `EVOLUTION_OPERATOR`.
 
 ## 13. Milestones
 
-| M | Scope (spec phase) | Done when |
+Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-PROMPT.md`.
+
+| M | Scope | Status |
 |---|---|---|
-| **M0** | Build skeleton, verified versions, Neo4j compose + Testcontainers, ArchUnit, CI script | `mvn clean verify` green on a real build |
-| **M1** | Phase 1: kernel, schema registry + meta-schema, `graph` writer (entities, assertions, evidence, versions, events in one tx), REST for schema/entities/relationships | Register a type + relationship by YAML/REST and persist with provenance; re-run = no duplicates |
-| **M2** | Phase 2: document store, Tika/Markdown ingestion, chunking, source versions, JavaParser extractor, JGit commit refs, idempotent incremental ingestion | Demo BRD + demo Java service ingested; `CALLS`/`EXPOSES_API` edges with code evidence |
-| **M3** | Phase 3: embeddings (hashing + OpenAI), fulltext + vector, graph expansion, fusion, context packer, eval harness | Demo question answered with cited graph + document evidence; eval metrics reported |
-| **M4** | Phase 4: historical queries, snapshots, diffs, recovery runbook | Code change in demo repo → edge superseded, history kept, snapshot diff shows it |
-| **M5** | Phase 5: skill + pipeline registries, executor, BRD + code pipelines, policies, conflicts | Pipelines run from YAML; failed step retried/resumed |
-| **M6** | Phase 6: MCP server tools over the same services, auth | Claude Code/Cursor can call `search_knowledge`, `get_task_context`, … |
-| **M7** | Phase 7: evolution L1/L2/L3, worktrees, sandbox build, activation, recovery | Demo items 16–18 pass, including a deliberately failing generated change |
+| **M0** | Build skeleton, verified versions, Neo4j compose + Testcontainers, ArchUnit | done |
+| **M1** | Foundation: schema registry, single graph writer, history in one transaction, REST | done |
+| **M2** | Deterministic ingestion: documents, Java code, Git, journeys (Postman / Java tests / Gatling / JMeter), routes, demo corpus | done |
+| **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | next |
+| **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | |
+| **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | |
+| **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | |
+| **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |
 
 Each milestone ends with: tests actually executed (with results), docs + ADRs updated, a
 status report (implemented / files / tests / migrations / config / known issues / next).

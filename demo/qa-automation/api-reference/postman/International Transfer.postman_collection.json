@@ -1,0 +1,207 @@
+{
+  "info": {
+    "name": "International Transfer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Transfer",
+      "item": [
+        {
+          "name": "ft-accounts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"auid\", jsonData.accounts[0].auid);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "moduleId",
+                "value": "TRANSFERS"
+              },
+              {
+                "key": "subModuleId",
+                "value": "FUND_TRANSFERS"
+              },
+              {
+                "key": "serviceId",
+                "value": "MENUS"
+              },
+              {
+                "key": "screenId",
+                "value": "SCREEN1"
+              },
+              {
+                "key": "unit",
+                "value": "DEFAULT"
+              },
+              {
+                "key": "channel",
+                "value": "MB"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/get-ft-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "get-ft-accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  // demo request\n  \"customerType\": \"RETAIL\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "ok",
+              "body": "{\"accounts\": [{\"auid\": \"a-1\", \"currency\": \"QAR\", \"balance\": 1500.5}]}"
+            }
+          ]
+        },
+        {
+          "name": "InitiateTransfer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"uuid\", pm.response.json().uuid);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "moduleId",
+                "value": "TRANSFER"
+              },
+              {
+                "key": "subModuleId",
+                "value": "INTERNATIONAL"
+              },
+              {
+                "key": "serviceId",
+                "value": "INTL_TRANSFER"
+              },
+              {
+                "key": "screenId",
+                "value": "INTL_01"
+              },
+              {
+                "key": "unit",
+                "value": "DEFAULT"
+              },
+              {
+                "key": "channel",
+                "value": "MB"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v2/international-transfers/validation",
+              "path": [
+                "api",
+                "v2",
+                "international-transfers",
+                "validation"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"auid\": \"{{auid}}\", \"buid\": \"b-1\", \"amount\": 100, \"currency\": \"USD\", \"purpose\": {\"code\": \"FAM\"}}"
+            }
+          },
+          "response": [
+            {
+              "name": "ok",
+              "body": "{\"uuid\": \"u-1\", \"status\": \"VALIDATED\"}"
+            }
+          ]
+        },
+        {
+          "name": "FinalSubmit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "moduleId",
+                "value": "TRANSFER"
+              },
+              {
+                "key": "subModuleId",
+                "value": "INTERNATIONAL"
+              },
+              {
+                "key": "serviceId",
+                "value": "INTL_TRANSFER"
+              },
+              {
+                "key": "screenId",
+                "value": "INTL_01"
+              },
+              {
+                "key": "unit",
+                "value": "DEFAULT"
+              },
+              {
+                "key": "channel",
+                "value": "MB"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v3/international-transfers/execute",
+              "path": [
+                "api",
+                "v3",
+                "international-transfers",
+                "execute"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"uuid\": \"{{uuid}}\", \"otp\": \"111111\"}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

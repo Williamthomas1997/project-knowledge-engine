@@ -1,0 +1,12 @@
+kind: EntityType
+name: ConfigProperty
+version: 1.0.0
+description: A configuration key (or @ConfigurationProperties prefix) read by code.
+category: technical
+properties:
+  repository: { type: string, required: true }
+  key: { type: string, required: true }
+  kind: { type: string, enum: [value, prefix] }
+  defaultValuePresent: { type: boolean }
+identity: { strategy: naturalKey, naturalKey: [repository, key] }
+retrieval: { displayProperty: key }

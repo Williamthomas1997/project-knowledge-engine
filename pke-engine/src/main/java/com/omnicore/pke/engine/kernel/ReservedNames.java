@@ -15,11 +15,11 @@ public final class ReservedNames {
             "Entity", "Assertion", "Evidence", "EntityVersion", "AssertionVersion", "ChangeEvent", "Sequence",
             "SchemaDefinition", "Snapshot", "SourceArtifact", "SourceVersion", "Chunk", "Section", "Conflict",
             "IndexTask", "VectorCollection", "EmbeddingGeneration", "OpenQuestion", "PipelineExecution",
-            "StepExecution", "Alias");
+            "StepExecution", "Alias", "IngestionRun");
 
     public static final Set<String> RELATIONSHIP_TYPES = Set.of(
             "SUBJECT", "OBJECT", "SUPPORTED_BY", "HAS_VERSION", "ABOUT", "FROM", "HAS_CHUNK", "BETWEEN",
-            "REPLACED_BY", "INDEXES", "EMBEDDED_WITH");
+            "REPLACED_BY", "INDEXES", "EMBEDDED_WITH", "HAS_ALIAS", "HAS_SECTION", "CURRENT_VERSION");
 
     private ReservedNames() {
     }

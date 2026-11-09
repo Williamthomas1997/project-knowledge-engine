@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: THROWS_ERROR
+version: 1.0.0
+description: The method raises an error carrying the error code.
+category: technical
+sourceTypes: [JavaMethod]
+targetTypes: [ErrorCode]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.6 }

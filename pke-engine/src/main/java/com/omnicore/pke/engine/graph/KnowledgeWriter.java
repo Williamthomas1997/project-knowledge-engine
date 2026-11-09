@@ -10,6 +10,7 @@ import com.omnicore.pke.engine.graph.KnowledgeChanges.ItemOutcome;
 import com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome;
 import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipInvalidation;
 import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.graph.KnowledgeChanges.ScopeRetraction;
 import com.omnicore.pke.engine.graph.PendingEvent.SubjectKind;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
 import com.omnicore.pke.engine.kernel.ChangeEventTypes;
@@ -46,9 +47,11 @@ import org.springframework.stereotype.Service;
  * The single writer of knowledge (ADR-009). Applies a {@link ChangeSet} in one transaction: entities, assertion
  * nodes and their native edges, evidence, versions and change events succeed or fail together.
  * <p>
- * Everything that can be checked without the database (types, labels, property names and values, ids, evidence)
- * is checked first; an invalid change set is rejected before a transaction is opened. Writing the same input
- * again is a no-op: no new versions, no events, no seq consumed.
+ * Everything that can be checked without the database (types, labels, property names and values, natural keys,
+ * evidence) is checked first; an invalid change set is rejected before a transaction is opened. Inside the
+ * transaction, ids are first resolved through aliases (renamed entities keep their {@code pke_id}), then
+ * relationship and evidence ids are derived from the canonical entity ids. Writing the same input again is a
+ * no-op: no new versions, no events, no seq consumed.
  */
 @Service
 public class KnowledgeWriter {
@@ -72,9 +75,19 @@ public class KnowledgeWriter {
         Prepared prepared = prepare(changes);
         return transactions.write(actor == null ? "unknown" : actor, operationId, ctx -> {
             List<ItemOutcome> outcomes = new ArrayList<>();
+            Set<String> touchedRelationships = new HashSet<>();
             prepared.entities().forEach(e -> outcomes.add(writeEntity(ctx, e)));
-            prepared.relationships().forEach(r -> outcomes.add(writeRelationship(ctx, r)));
+            for (PreparedRelationship r : prepared.relationships()) {
+                ItemOutcome outcome = writeRelationship(ctx, r, Boolean.TRUE.equals(changes.skipMissingEndpoints()));
+                touchedRelationships.add(outcome.id());
+                outcomes.add(outcome);
+            }
             prepared.invalidations().forEach(i -> outcomes.add(invalidate(ctx, i)));
+            for (ScopeRetraction retraction : prepared.retractions()) {
+                for (String id : retractable(ctx, retraction, touchedRelationships)) {
+                    outcomes.add(invalidate(ctx, new PreparedInvalidation("/retractions", id, retraction.reason(), null, List.of())));
+                }
+            }
             List<Long> seqs = outcomes.stream().map(ItemOutcome::seq).filter(Objects::nonNull).toList();
             return new ChangeResult(operationId, outcomes, seqs.isEmpty() ? null : seqs.getFirst(),
                     seqs.isEmpty() ? null : seqs.getLast());
@@ -88,22 +101,26 @@ public class KnowledgeWriter {
     // ---------------------------------------------------------------- validation before any Cypher runs
 
     private record Prepared(List<PreparedEntity> entities, List<PreparedRelationship> relationships,
-                            List<PreparedInvalidation> invalidations) {
+                            List<PreparedInvalidation> invalidations, List<ScopeRetraction> retractions) {
     }
 
-    private record PreparedEntity(String path, EntityTypeDefinition definition, String id, Map<String, Object> properties,
-                                  String hash, EpistemicStatus epistemic, OffsetDateTime validAt,
-                                  List<Map<String, Object>> evidence) {
+    /** Evidence properties without the subject-dependent id; {@code idKey} completes the id once the subject is known. */
+    private record EvidenceTemplate(Map<String, Object> row, List<Object> idKey) {
     }
 
-    private record PreparedRelationship(String path, RelationshipTypeDefinition definition, String id, String subjectId,
-                                        String objectId, Map<String, Object> properties, String hash,
-                                        EpistemicStatus epistemic, OffsetDateTime validAt,
-                                        List<Map<String, Object>> evidence) {
+    private record PreparedEntity(String path, EntityTypeDefinition definition, String computedId, String renamedFromId,
+                                  Map<String, Object> properties, String hash, EpistemicStatus epistemic,
+                                  OffsetDateTime validAt, List<EvidenceTemplate> evidence) {
+    }
+
+    private record PreparedRelationship(String path, RelationshipTypeDefinition definition, String subjectId,
+                                        String objectId, List<Object> discriminator, Map<String, Object> properties,
+                                        String hash, EpistemicStatus epistemic, OffsetDateTime validAt,
+                                        List<EvidenceTemplate> evidence) {
     }
 
     private record PreparedInvalidation(String path, String id, String reason, OffsetDateTime invalidAt,
-                                        List<Map<String, Object>> evidence) {
+                                        List<EvidenceTemplate> evidence) {
     }
 
     private Prepared prepare(ChangeSet changes) {
@@ -113,21 +130,22 @@ public class KnowledgeWriter {
         for (int i = 0; i < changes.entities().size(); i++) {
             PreparedEntity entity = prepareEntity("/entities/" + i, changes.entities().get(i), violations);
             if (entity != null) {
-                if (!entityIds.add(entity.id())) {
-                    violations.add(new Violation(entity.path(), "entity " + entity.id() + " appears twice in the change set"));
+                if (!entityIds.add(entity.computedId())) {
+                    violations.add(new Violation(entity.path(), "entity " + entity.computedId() + " appears twice in the change set"));
                 }
                 entities.add(entity);
             }
         }
         List<PreparedRelationship> relationships = new ArrayList<>();
-        Set<String> relationshipIds = new HashSet<>();
+        Set<String> relationshipKeys = new HashSet<>();
         for (int i = 0; i < changes.relationships().size(); i++) {
             PreparedRelationship relationship = prepareRelationship("/relationships/" + i,
                     changes.relationships().get(i), violations);
             if (relationship != null) {
-                if (!relationshipIds.add(relationship.id())) {
-                    violations.add(new Violation(relationship.path(),
-                            "relationship " + relationship.id() + " appears twice in the change set"));
+                String key = PkeIds.relationshipId(relationship.definition().name(), relationship.subjectId(),
+                        relationship.objectId(), relationship.discriminator());
+                if (!relationshipKeys.add(key)) {
+                    violations.add(new Violation(relationship.path(), "the same relationship appears twice in the change set"));
                 }
                 relationships.add(relationship);
             }
@@ -136,22 +154,28 @@ public class KnowledgeWriter {
         for (int i = 0; i < changes.invalidations().size(); i++) {
             String path = "/invalidations/" + i;
             RelationshipInvalidation invalidation = changes.invalidations().get(i);
-            if (invalidation.relationshipId() == null || invalidation.relationshipId().isBlank()) {
+            if (isBlank(invalidation.relationshipId())) {
                 violations.add(new Violation(path + "/relationshipId", "is required"));
                 continue;
             }
-            if (relationshipIds.contains(invalidation.relationshipId())) {
+            if (relationshipKeys.contains(invalidation.relationshipId())) {
                 violations.add(new Violation(path, "the same change set also writes this relationship"));
             }
             invalidations.add(new PreparedInvalidation(path, invalidation.relationshipId(), invalidation.reason(),
                     dateTime(invalidation.invalidAt(), path + "/invalidAt", violations),
-                    evidence(invalidation.relationshipId(), invalidation.evidence(), EpistemicStatus.OBSERVED, 0,
-                            path + "/evidence", violations)));
+                    evidence(invalidation.evidence(), EpistemicStatus.OBSERVED, 0, path + "/evidence", violations)));
+        }
+        for (int i = 0; i < changes.retractions().size(); i++) {
+            ScopeRetraction retraction = changes.retractions().get(i);
+            String path = "/retractions/" + i;
+            if (isBlank(retraction.sourceArtifactId()) || isBlank(retraction.scope()) || isBlank(retraction.extractionMethod())) {
+                violations.add(new Violation(path, "sourceArtifactId, scope and extractionMethod are required"));
+            }
         }
         if (!violations.isEmpty()) {
             throw new ValidationFailedException("Change set rejected", violations);
         }
-        return new Prepared(entities, relationships, invalidations);
+        return new Prepared(entities, relationships, invalidations, changes.retractions());
     }
 
     private PreparedEntity prepareEntity(String path, EntityWrite write, List<Violation> violations) {
@@ -183,11 +207,17 @@ public class KnowledgeWriter {
         if (id != null && !EXPLICIT_ID.matcher(id).matches()) {
             violations.add(new Violation(path + "/id", "must match " + EXPLICIT_ID.pattern()));
         }
-        EpistemicStatus epistemic = write.epistemic();
-        List<Map<String, Object>> evidence = evidence(id, write.evidence(), epistemic, definition.evidenceMinItems(),
-                path + "/evidence", violations);
-        return new PreparedEntity(path, definition, id, validated.properties(), CanonicalJson.sha256(validated.properties()),
-                epistemic, dateTime(write.validAt(), path + "/validAt", violations), evidence);
+        String renamedFrom = null;
+        if (write.renamedFrom() != null) {
+            renamedFrom = resolve(write.renamedFrom(), path + "/renamedFrom", violations);
+            if (write.renamedFrom().type() != null && !write.renamedFrom().type().equals(definition.name())) {
+                violations.add(new Violation(path + "/renamedFrom/type", "a rename cannot change the entity type"));
+            }
+        }
+        return new PreparedEntity(path, definition, id, renamedFrom, validated.properties(),
+                CanonicalJson.sha256(validated.properties()), write.epistemic(),
+                dateTime(write.validAt(), path + "/validAt", violations),
+                evidence(write.evidence(), write.epistemic(), definition.evidenceMinItems(), path + "/evidence", violations));
     }
 
     private PreparedRelationship prepareRelationship(String path, RelationshipWrite write, List<Violation> violations) {
@@ -202,13 +232,11 @@ public class KnowledgeWriter {
         }
         RelationshipTypeDefinition definition = validated.definition();
         validator.checkEndpoints(definition, write.subject().type(), write.object().type(), path, violations);
-        String id = PkeIds.relationshipId(definition.name(), subjectId, objectId,
-                validator.discriminator(definition, validated.properties()));
-        List<Map<String, Object>> evidence = evidence(id, write.evidence(), write.epistemic(),
-                definition.evidenceMinItems(), path + "/evidence", violations);
-        return new PreparedRelationship(path, definition, id, subjectId, objectId, validated.properties(),
+        return new PreparedRelationship(path, definition, subjectId, objectId,
+                validator.discriminator(definition, validated.properties()), validated.properties(),
                 CanonicalJson.sha256(validated.properties()), write.epistemic(),
-                dateTime(write.validAt(), path + "/validAt", violations), evidence);
+                dateTime(write.validAt(), path + "/validAt", violations),
+                evidence(write.evidence(), write.epistemic(), definition.evidenceMinItems(), path + "/evidence", violations));
     }
 
     private String resolve(EntityRef ref, String path, List<Violation> violations) {
@@ -235,13 +263,12 @@ public class KnowledgeWriter {
         return violations.size() == before ? PkeIds.entityId(definition.name(), values) : null;
     }
 
-    private List<Map<String, Object>> evidence(String subjectId, List<EvidenceInput> inputs, EpistemicStatus defaultEpistemic,
-                                               int minItems, String path, List<Violation> violations) {
+    private List<EvidenceTemplate> evidence(List<EvidenceInput> inputs, EpistemicStatus defaultEpistemic, int minItems,
+                                            String path, List<Violation> violations) {
         if (inputs.size() < minItems) {
             violations.add(new Violation(path, "at least " + minItems + " evidence item(s) required by the schema"));
         }
-        List<Map<String, Object>> evidence = new ArrayList<>();
-        Set<String> ids = new HashSet<>();
+        List<EvidenceTemplate> evidence = new ArrayList<>();
         for (int i = 0; i < inputs.size(); i++) {
             EvidenceInput in = inputs.get(i);
             String itemPath = path + "/" + i;
@@ -262,19 +289,12 @@ public class KnowledgeWriter {
             if (epistemic == EpistemicStatus.INFERRED_AI && isBlank(in.modelId())) {
                 violations.add(new Violation(itemPath + "/modelId", "is required for AI-inferred evidence"));
             }
-            if (subjectId == null) {
-                continue;
-            }
-            String id = PkeIds.evidenceId(subjectId, Arrays.asList(in.sourceArtifactId(), in.sourceVersion(),
-                    in.location(), in.extractionMethod(), in.contentHash()));
-            if (!ids.add(id)) {
-                continue;
-            }
             Map<String, Object> row = new HashMap<>();
-            row.put("pke_id", id);
-            row.put("subjectId", subjectId);
             row.put("sourceArtifactId", in.sourceArtifactId());
             row.put("sourceVersion", in.sourceVersion());
+            row.put("sourceVersionId", in.sourceArtifactId() != null && in.sourceVersion() != null
+                    ? PkeIds.sourceVersionId(in.sourceArtifactId(), in.sourceVersion()) : null);
+            row.put("scope", in.scope());
             row.put("location", in.location());
             row.put("contentHash", in.contentHash());
             row.put("extractionMethod", in.extractionMethod());
@@ -287,7 +307,11 @@ public class KnowledgeWriter {
             row.put("confidenceReported", in.confidence());
             row.put("confidenceCalibrated", in.confidence() == null ? null : false);
             row.put("epistemic", epistemic == null ? null : epistemic.name());
-            evidence.add(row);
+            List<Object> idKey = in.scope() != null
+                    ? Arrays.asList(in.sourceArtifactId(), "scope", in.scope(), in.extractionMethod())
+                    : Arrays.asList(in.sourceArtifactId(), in.sourceVersion(), in.location(), in.extractionMethod(),
+                    in.contentHash());
+            evidence.add(new EvidenceTemplate(row, idKey));
         }
         return evidence;
     }
@@ -304,15 +328,50 @@ public class KnowledgeWriter {
         }
     }
 
+    // ---------------------------------------------------------------- identity inside the transaction
+
+    /** The canonical {@code pke_id} for a computed id: itself, or the entity an alias points to. */
+    private static String canonical(WriteContext ctx, String id) {
+        return ctx.single("MATCH (a:Alias {pke_id: $id}) RETURN a.entityId AS target", Map.of("id", id))
+                .map(r -> r.get("target").asString()).orElse(id);
+    }
+
+    private static List<Map<String, Object>> evidenceRows(List<EvidenceTemplate> templates, String subjectId) {
+        Map<String, Map<String, Object>> rows = new LinkedHashMap<>();
+        for (EvidenceTemplate template : templates) {
+            String id = PkeIds.evidenceId(subjectId, template.idKey());
+            Map<String, Object> row = new HashMap<>(template.row());
+            row.put("pke_id", id);
+            row.put("subjectId", subjectId);
+            rows.putIfAbsent(id, row);
+        }
+        return new ArrayList<>(rows.values());
+    }
+
     // ---------------------------------------------------------------- entities
 
-    private ItemOutcome writeEntity(WriteContext ctx, PreparedEntity e) {
-        String label = CypherIdentifiers.label(e.definition().name());
-        Record existing = ctx.single("""
+    private Record loadEntity(WriteContext ctx, String id) {
+        return ctx.single("""
                 MATCH (n:Entity {pke_id: $id})
                 RETURN n.pke_type AS type, n.pke_version AS version, n.pke_propsHash AS hash,
                        n.pke_epistemic AS epistemic, n.pke_validAt AS validAt, properties(n) AS props""",
-                Map.of("id", e.id())).orElse(null);
+                Map.of("id", id)).orElse(null);
+    }
+
+    private ItemOutcome writeEntity(WriteContext ctx, PreparedEntity e) {
+        String label = CypherIdentifiers.label(e.definition().name());
+        String id = canonical(ctx, e.computedId());
+        Record existing = loadEntity(ctx, id);
+        boolean rename = false;
+        if (existing == null && e.renamedFromId() != null) {
+            String previousId = canonical(ctx, e.renamedFromId());
+            Record previous = loadEntity(ctx, previousId);
+            if (previous != null && previous.get("type").asString().equals(e.definition().name())) {
+                id = previousId;
+                existing = previous;
+                rename = true;
+            }
+        }
 
         if (existing == null) {
             long seq = ctx.nextSeq();
@@ -321,41 +380,42 @@ public class KnowledgeWriter {
                                       pke_propsHash: $hash, pke_epistemic: $epistemic, pke_validAt: $validAt,
                                       pke_createdSeq: $seq, pke_updatedSeq: $seq})
                     SET n:$($label)
-                    SET n += $props""", params("id", e.id(), "type", e.definition().name(), "label", label,
+                    SET n += $props""", params("id", id, "type", e.definition().name(), "label", label,
                     "schemaVersion", e.definition().version(), "hash", e.hash(), "epistemic", e.epistemic().name(),
                     "validAt", e.validAt(), "seq", seq, "props", e.properties()));
             ctx.reached(WriteStage.AFTER_ENTITY);
-            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, e.id(), e.evidence(), seq);
-            writeEntityVersion(ctx, e, 1, seq, e.validAt());
-            ctx.emit(new PendingEvent(seq, ChangeEventTypes.ENTITY_CREATED, SubjectKind.ENTITY, e.id(),
+            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, id, evidenceRows(e.evidence(), id), seq);
+            writeEntityVersion(ctx, id, e, 1, seq, e.validAt());
+            ctx.emit(new PendingEvent(seq, ChangeEventTypes.ENTITY_CREATED, SubjectKind.ENTITY, id,
                     e.definition().name(), 1L, details("hash", e.hash(), "schemaVersion", e.definition().version(),
                     "epistemic", e.epistemic().name(), "evidenceIds", evidenceIds)));
-            return new ItemOutcome("ENTITY", e.id(), e.definition().name(), Outcome.CREATED, 1L, seq);
+            return new ItemOutcome("ENTITY", id, e.definition().name(), Outcome.CREATED, 1L, seq);
         }
 
         String existingType = existing.get("type").asString();
         if (!existingType.equals(e.definition().name())) {
             throw new ValidationFailedException("Change set rejected", List.of(new Violation(e.path() + "/type",
-                    "entity " + e.id() + " already exists as " + existingType)));
+                    "entity " + id + " already exists as " + existingType)));
         }
         long version = existing.get("version").asLong();
         Map<String, Object> oldProps = domainProperties(existing.get("props").asMap());
         Object existingValidAt = existing.get("validAt").asObject();
         boolean validAtChanged = e.validAt() != null && !sameInstant(e.validAt(), existingValidAt);
-        boolean changed = !e.hash().equals(existing.get("hash").asString(null))
+        boolean changed = rename
+                || !e.hash().equals(existing.get("hash").asString(null))
                 || !e.epistemic().name().equals(existing.get("epistemic").asString(null))
                 || validAtChanged;
-        List<Map<String, Object>> newEvidence = newEvidence(ctx, e.evidence());
+        List<Map<String, Object>> newEvidence = newEvidence(ctx, evidenceRows(e.evidence(), id));
 
         if (!changed) {
             if (newEvidence.isEmpty()) {
-                return new ItemOutcome("ENTITY", e.id(), existingType, Outcome.UNCHANGED, version, null);
+                return new ItemOutcome("ENTITY", id, existingType, Outcome.UNCHANGED, version, null);
             }
             long seq = ctx.nextSeq();
-            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, e.id(), newEvidence, seq);
-            ctx.emit(new PendingEvent(seq, ChangeEventTypes.EVIDENCE_ADDED, SubjectKind.ENTITY, e.id(), existingType,
+            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, id, newEvidence, seq);
+            ctx.emit(new PendingEvent(seq, ChangeEventTypes.EVIDENCE_ADDED, SubjectKind.ENTITY, id, existingType,
                     version, details("evidenceIds", evidenceIds)));
-            return new ItemOutcome("ENTITY", e.id(), existingType, Outcome.EVIDENCE_ADDED, version, seq);
+            return new ItemOutcome("ENTITY", id, existingType, Outcome.EVIDENCE_ADDED, version, seq);
         }
 
         long seq = ctx.nextSeq();
@@ -365,19 +425,27 @@ public class KnowledgeWriter {
                 MATCH (n:Entity {pke_id: $id})
                 SET n += $props, n.pke_version = $version, n.pke_propsHash = $hash, n.pke_epistemic = $epistemic,
                     n.pke_validAt = coalesce($validAt, n.pke_validAt), n.pke_updatedSeq = $seq,
-                    n.pke_schemaVersion = $schemaVersion""", params("id", e.id(), "props", props, "version", newVersion,
+                    n.pke_schemaVersion = $schemaVersion""", params("id", id, "props", props, "version", newVersion,
                 "hash", e.hash(), "epistemic", e.epistemic().name(), "validAt", e.validAt(), "seq", seq,
                 "schemaVersion", e.definition().version()));
+        if (rename) {
+            ctx.run("""
+                    MATCH (n:Entity {pke_id: $id})
+                    MERGE (a:Alias {pke_id: $alias})
+                      ON CREATE SET a.entityId = $id, a.entityType = $type, a.createdSeq = $seq
+                    MERGE (n)-[:HAS_ALIAS]->(a)""", Map.of("id", id, "alias", e.computedId(), "type", existingType, "seq", seq));
+        }
         ctx.reached(WriteStage.AFTER_ENTITY);
-        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, e.id(), newEvidence, seq);
-        writeEntityVersion(ctx, e, newVersion, seq, e.validAt() != null ? e.validAt() : existingValidAt);
-        ctx.emit(new PendingEvent(seq, ChangeEventTypes.ENTITY_UPDATED, SubjectKind.ENTITY, e.id(), existingType,
-                newVersion, details("fromVersion", version, "hash", e.hash(), "changedKeys", changedKeys(oldProps, e.properties()),
-                "epistemic", e.epistemic().name(), "validAtChanged", validAtChanged, "evidenceIds", evidenceIds)));
-        return new ItemOutcome("ENTITY", e.id(), existingType, Outcome.UPDATED, newVersion, seq);
+        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, id, newEvidence, seq);
+        writeEntityVersion(ctx, id, e, newVersion, seq, e.validAt() != null ? e.validAt() : existingValidAt);
+        ctx.emit(new PendingEvent(seq, rename ? ChangeEventTypes.ENTITY_RENAMED : ChangeEventTypes.ENTITY_UPDATED,
+                SubjectKind.ENTITY, id, existingType, newVersion, details("fromVersion", version, "hash", e.hash(),
+                "changedKeys", changedKeys(oldProps, e.properties()), "epistemic", e.epistemic().name(),
+                "validAtChanged", validAtChanged, "aliasId", rename ? e.computedId() : null, "evidenceIds", evidenceIds)));
+        return new ItemOutcome("ENTITY", id, existingType, rename ? Outcome.RENAMED : Outcome.UPDATED, newVersion, seq);
     }
 
-    private void writeEntityVersion(WriteContext ctx, PreparedEntity e, long version, long seq, Object validAt) {
+    private void writeEntityVersion(WriteContext ctx, String id, PreparedEntity e, long version, long seq, Object validAt) {
         ctx.run("""
                 MATCH (n:Entity {pke_id: $id})
                 OPTIONAL MATCH (n)-[:HAS_VERSION]->(prev:EntityVersion {version: $previous})
@@ -385,7 +453,7 @@ public class KnowledgeWriter {
                 CREATE (n)-[:HAS_VERSION]->(:EntityVersion {pke_id: $versionId, entityId: $id, version: $version,
                         propsJson: $propsJson, propsHash: $hash, epistemic: $epistemic, validAt: $validAt,
                         schemaVersion: $schemaVersion, validFromSeq: $seq, recordedAt: $at})""",
-                params("id", e.id(), "previous", version - 1, "seq", seq, "versionId", PkeIds.versionId(e.id(), version),
+                params("id", id, "previous", version - 1, "seq", seq, "versionId", PkeIds.versionId(id, version),
                         "version", version, "propsJson", CanonicalJson.write(e.properties()), "hash", e.hash(),
                         "epistemic", e.epistemic().name(), "validAt", validAt, "schemaVersion", e.definition().version(),
                         "at", ctx.now()));
@@ -394,21 +462,27 @@ public class KnowledgeWriter {
 
     // ---------------------------------------------------------------- relationships
 
-    private ItemOutcome writeRelationship(WriteContext ctx, PreparedRelationship r) {
+    private ItemOutcome writeRelationship(WriteContext ctx, PreparedRelationship r, boolean skipMissingEndpoints) {
         String type = CypherIdentifiers.relationshipType(r.definition().name());
+        String subjectId = canonical(ctx, r.subjectId());
+        String objectId = canonical(ctx, r.objectId());
+        String id = PkeIds.relationshipId(type, subjectId, objectId, r.discriminator());
         Record endpoints = ctx.single("""
                 OPTIONAL MATCH (s:Entity {pke_id: $subjectId})
                 OPTIONAL MATCH (o:Entity {pke_id: $objectId})
                 RETURN s.pke_type AS subjectType, o.pke_type AS objectType""",
-                Map.of("subjectId", r.subjectId(), "objectId", r.objectId())).orElseThrow();
+                Map.of("subjectId", subjectId, "objectId", objectId)).orElseThrow();
         List<Violation> violations = new ArrayList<>();
         String subjectType = endpoints.get("subjectType").asString(null);
         String objectType = endpoints.get("objectType").asString(null);
+        if (skipMissingEndpoints && (subjectType == null || objectType == null)) {
+            return new ItemOutcome("RELATIONSHIP", id, type, Outcome.SKIPPED, null, null);
+        }
         if (subjectType == null) {
-            violations.add(new Violation(r.path() + "/subject", "entity " + r.subjectId() + " does not exist"));
+            violations.add(new Violation(r.path() + "/subject", "entity " + subjectId + " does not exist"));
         }
         if (objectType == null) {
-            violations.add(new Violation(r.path() + "/object", "entity " + r.objectId() + " does not exist"));
+            violations.add(new Violation(r.path() + "/object", "entity " + objectId + " does not exist"));
         }
         validator.checkEndpoints(r.definition(), subjectType, objectType, r.path(), violations);
         if (!violations.isEmpty()) {
@@ -419,8 +493,9 @@ public class KnowledgeWriter {
                 MATCH (a:Assertion {pke_id: $id})
                 RETURN a.pke_status AS status, a.pke_version AS version, a.pke_propsHash AS hash,
                        a.pke_epistemic AS epistemic, a.pke_validAt AS validAt, properties(a) AS props""",
-                Map.of("id", r.id())).orElse(null);
+                Map.of("id", id)).orElse(null);
         String category = r.definition().category();
+        List<Map<String, Object>> evidence = evidenceRows(r.evidence(), id);
 
         if (existing == null) {
             long seq = ctx.nextSeq();
@@ -433,19 +508,19 @@ public class KnowledgeWriter {
                                          pke_version: 1, pke_propsHash: $hash, pke_validAt: $validAt,
                                          pke_createdSeq: $seq, pke_updatedSeq: $seq})
                     SET a += $props
-                    CREATE (a)-[:SUBJECT]->(s), (a)-[:OBJECT]->(o)""", params("id", r.id(), "type", type,
-                    "category", category, "schemaVersion", r.definition().version(), "subjectId", r.subjectId(),
-                    "objectId", r.objectId(), "epistemic", r.epistemic().name(), "hash", r.hash(), "validAt", validAt,
+                    CREATE (a)-[:SUBJECT]->(s), (a)-[:OBJECT]->(o)""", params("id", id, "type", type,
+                    "category", category, "schemaVersion", r.definition().version(), "subjectId", subjectId,
+                    "objectId", objectId, "epistemic", r.epistemic().name(), "hash", r.hash(), "validAt", validAt,
                     "seq", seq, "props", r.properties()));
             ctx.reached(WriteStage.AFTER_ASSERTION);
-            createEdge(ctx, r, type);
-            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, r.id(), r.evidence(), seq);
-            writeAssertionVersion(ctx, r.id(), 1, seq, "CURRENT", r.properties(), r.hash(), r.epistemic().name(),
+            createEdge(ctx, r, id, subjectId, objectId, type);
+            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, id, evidence, seq);
+            writeAssertionVersion(ctx, id, 1, seq, "CURRENT", r.properties(), r.hash(), r.epistemic().name(),
                     validAt, null, r.definition().version());
-            ctx.emit(new PendingEvent(seq, ChangeEventTypes.RELATIONSHIP_CREATED, SubjectKind.RELATIONSHIP, r.id(), type,
-                    1L, details("subjectId", r.subjectId(), "objectId", r.objectId(), "hash", r.hash(),
+            ctx.emit(new PendingEvent(seq, ChangeEventTypes.RELATIONSHIP_CREATED, SubjectKind.RELATIONSHIP, id, type,
+                    1L, details("subjectId", subjectId, "objectId", objectId, "hash", r.hash(),
                     "epistemic", r.epistemic().name(), "category", category, "evidenceIds", evidenceIds)));
-            return new ItemOutcome("RELATIONSHIP", r.id(), type, Outcome.CREATED, 1L, seq);
+            return new ItemOutcome("RELATIONSHIP", id, type, Outcome.CREATED, 1L, seq);
         }
 
         long version = existing.get("version").asLong();
@@ -455,17 +530,17 @@ public class KnowledgeWriter {
         boolean changed = !r.hash().equals(existing.get("hash").asString(null))
                 || !r.epistemic().name().equals(existing.get("epistemic").asString(null))
                 || validAtChanged;
-        List<Map<String, Object>> newEvidence = newEvidence(ctx, r.evidence());
+        List<Map<String, Object>> newEvidence = newEvidence(ctx, evidence);
 
         if (current && !changed) {
             if (newEvidence.isEmpty()) {
-                return new ItemOutcome("RELATIONSHIP", r.id(), type, Outcome.UNCHANGED, version, null);
+                return new ItemOutcome("RELATIONSHIP", id, type, Outcome.UNCHANGED, version, null);
             }
             long seq = ctx.nextSeq();
-            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, r.id(), newEvidence, seq);
-            ctx.emit(new PendingEvent(seq, ChangeEventTypes.EVIDENCE_ADDED, SubjectKind.RELATIONSHIP, r.id(), type,
+            List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, id, newEvidence, seq);
+            ctx.emit(new PendingEvent(seq, ChangeEventTypes.EVIDENCE_ADDED, SubjectKind.RELATIONSHIP, id, type,
                     version, details("evidenceIds", evidenceIds)));
-            return new ItemOutcome("RELATIONSHIP", r.id(), type, Outcome.EVIDENCE_ADDED, version, seq);
+            return new ItemOutcome("RELATIONSHIP", id, type, Outcome.EVIDENCE_ADDED, version, seq);
         }
 
         long seq = ctx.nextSeq();
@@ -473,7 +548,7 @@ public class KnowledgeWriter {
         Map<String, Object> oldProps = domainProperties(existing.get("props").asMap());
         Map<String, Object> props = withRemovals(oldProps, r.properties());
         Object validAt = r.validAt() != null ? r.validAt() : (current ? existingValidAt : ctx.now());
-        updateAssertion(ctx, r.id(), props, newVersion, r.hash(), r.epistemic().name(), "CURRENT", validAt, null, null,
+        updateAssertion(ctx, id, props, newVersion, r.hash(), r.epistemic().name(), "CURRENT", validAt, null, null,
                 seq, r.definition().version());
         ctx.reached(WriteStage.AFTER_ASSERTION);
         if (current) {
@@ -481,36 +556,56 @@ public class KnowledgeWriter {
                     MATCH (s:Entity {pke_id: $subjectId})-[r:$($type)]->(o:Entity {pke_id: $objectId})
                     WHERE r.pke_relId = $id
                     SET r += $props, r.pke_epistemic = $epistemic
-                    RETURN count(r) AS updated""", params("subjectId", r.subjectId(), "objectId", r.objectId(),
-                    "type", type, "id", r.id(), "props", props, "epistemic", r.epistemic().name()))
+                    RETURN count(r) AS updated""", params("subjectId", subjectId, "objectId", objectId,
+                    "type", type, "id", id, "props", props, "epistemic", r.epistemic().name()))
                     .orElseThrow().get("updated").asInt();
             if (updated != 1) {
-                throw new IllegalStateException("Integrity violation: current assertion " + r.id() + " has " + updated
+                throw new IllegalStateException("Integrity violation: current assertion " + id + " has " + updated
                         + " native edges; run GET /api/integrity");
             }
             ctx.reached(WriteStage.AFTER_EDGE);
         } else {
-            createEdge(ctx, r, type);
+            createEdge(ctx, r, id, subjectId, objectId, type);
         }
-        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, r.id(), newEvidence, seq);
-        writeAssertionVersion(ctx, r.id(), newVersion, seq, "CURRENT", r.properties(), r.hash(), r.epistemic().name(),
+        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, id, newEvidence, seq);
+        writeAssertionVersion(ctx, id, newVersion, seq, "CURRENT", r.properties(), r.hash(), r.epistemic().name(),
                 validAt, null, r.definition().version());
         String eventType = current ? ChangeEventTypes.RELATIONSHIP_UPDATED : ChangeEventTypes.RELATIONSHIP_REVALIDATED;
-        ctx.emit(new PendingEvent(seq, eventType, SubjectKind.RELATIONSHIP, r.id(), type, newVersion,
+        ctx.emit(new PendingEvent(seq, eventType, SubjectKind.RELATIONSHIP, id, type, newVersion,
                 details("fromVersion", version, "hash", r.hash(), "changedKeys", changedKeys(oldProps, r.properties()),
                         "epistemic", r.epistemic().name(), "evidenceIds", evidenceIds)));
-        return new ItemOutcome("RELATIONSHIP", r.id(), type, current ? Outcome.UPDATED : Outcome.REVALIDATED, newVersion, seq);
+        return new ItemOutcome("RELATIONSHIP", id, type, current ? Outcome.UPDATED : Outcome.REVALIDATED, newVersion, seq);
     }
 
-    private void createEdge(WriteContext ctx, PreparedRelationship r, String type) {
+    private void createEdge(WriteContext ctx, PreparedRelationship r, String id, String subjectId, String objectId,
+                            String type) {
         ctx.run("""
                 MATCH (s:Entity {pke_id: $subjectId}), (o:Entity {pke_id: $objectId})
                 CREATE (s)-[r:$($type)]->(o)
                 SET r.pke_relId = $id, r.pke_epistemic = $epistemic, r.pke_category = $category
-                SET r += $props""", params("subjectId", r.subjectId(), "objectId", r.objectId(), "type", type,
-                "id", r.id(), "epistemic", r.epistemic().name(), "category", r.definition().category(),
+                SET r += $props""", params("subjectId", subjectId, "objectId", objectId, "type", type,
+                "id", id, "epistemic", r.epistemic().name(), "category", r.definition().category(),
                 "props", r.properties()));
         ctx.reached(WriteStage.AFTER_EDGE);
+    }
+
+    /**
+     * Current assertions supported by the retracted scope that this change set did not write again, and that no
+     * other scope (or unscoped evidence) still supports.
+     */
+    private static List<String> retractable(WriteContext ctx, ScopeRetraction retraction, Set<String> touched) {
+        return ctx.run("""
+                MATCH (a:Assertion {pke_status: 'CURRENT'})-[:SUPPORTED_BY]->(:Evidence {sourceArtifactId: $artifact,
+                                                                                    scope: $scope, extractionMethod: $method})
+                WHERE NOT a.pke_id IN $touched
+                  AND NOT EXISTS {
+                    MATCH (a)-[:SUPPORTED_BY]->(o:Evidence)
+                    WHERE o.scope IS NULL OR o.scope <> $scope OR o.sourceArtifactId <> $artifact
+                  }
+                RETURN DISTINCT a.pke_id AS id ORDER BY id""",
+                Map.of("artifact", retraction.sourceArtifactId(), "scope", retraction.scope(),
+                        "method", retraction.extractionMethod(), "touched", List.copyOf(touched)))
+                .stream().map(r -> r.get("id").asString()).toList();
     }
 
     private ItemOutcome invalidate(WriteContext ctx, PreparedInvalidation inv) {
@@ -547,7 +642,8 @@ public class KnowledgeWriter {
                     + " native edges; run GET /api/integrity");
         }
         ctx.reached(WriteStage.AFTER_EDGE);
-        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, inv.id(), newEvidence(ctx, inv.evidence()), seq);
+        List<String> evidenceIds = writeEvidence(ctx, SubjectKind.RELATIONSHIP, inv.id(),
+                newEvidence(ctx, evidenceRows(inv.evidence(), inv.id())), seq);
         writeAssertionVersion(ctx, inv.id(), newVersion, seq, "INVALID", domainProperties(existing.get("props").asMap()),
                 hash, epistemic, validAt, invalidAt, schemaVersion);
         ctx.emit(new PendingEvent(seq, ChangeEventTypes.RELATIONSHIP_INVALIDATED, SubjectKind.RELATIONSHIP, inv.id(), type,
@@ -599,6 +695,7 @@ public class KnowledgeWriter {
         return evidence.stream().filter(e -> !existing.contains(e.get("pke_id"))).toList();
     }
 
+    /** Writes evidence for a subject and links each item to its {@code :SourceVersion} when that version is known. */
     private List<String> writeEvidence(WriteContext ctx, SubjectKind kind, String subjectId,
                                        List<Map<String, Object>> evidence, long seq) {
         if (evidence.isEmpty()) {
@@ -615,12 +712,18 @@ public class KnowledgeWriter {
                   MATCH (s:Entity {pke_id: $subjectId})
                   UNWIND $evidence AS ev
                   CREATE (e:Evidence) SET e = ev
-                  CREATE (s)-[:SUPPORTED_BY]->(e)"""
+                  CREATE (s)-[:SUPPORTED_BY]->(e)
+                  WITH e
+                  OPTIONAL MATCH (sv:SourceVersion {pke_id: e.sourceVersionId})
+                  FOREACH (_ IN CASE WHEN sv IS NULL THEN [] ELSE [1] END | CREATE (e)-[:FROM]->(sv))"""
                 : """
                   MATCH (s:Assertion {pke_id: $subjectId})
                   UNWIND $evidence AS ev
                   CREATE (e:Evidence) SET e = ev
-                  CREATE (s)-[:SUPPORTED_BY]->(e)""";
+                  CREATE (s)-[:SUPPORTED_BY]->(e)
+                  WITH e
+                  OPTIONAL MATCH (sv:SourceVersion {pke_id: e.sourceVersionId})
+                  FOREACH (_ IN CASE WHEN sv IS NULL THEN [] ELSE [1] END | CREATE (e)-[:FROM]->(sv))""";
         ctx.run(cypher, Map.of("subjectId", subjectId, "evidence", rows));
         ctx.reached(WriteStage.AFTER_EVIDENCE);
         return rows.stream().map(r -> (String) r.get("pke_id")).toList();
@@ -676,7 +779,7 @@ public class KnowledgeWriter {
     }
 
     /** Like {@code Map.of}, but allows null values (sent to Neo4j as null). */
-    private static Map<String, Object> params(Object... keyValues) {
+    static Map<String, Object> params(Object... keyValues) {
         Map<String, Object> params = new HashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             params.put((String) keyValues[i], keyValues[i + 1]);

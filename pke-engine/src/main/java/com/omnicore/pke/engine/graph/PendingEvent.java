@@ -9,5 +9,5 @@ import java.util.Map;
 record PendingEvent(long seq, String type, SubjectKind subjectKind, String subjectId, String subjectType, Long version,
                     Map<String, Object> details) {
 
-    enum SubjectKind { ENTITY, RELATIONSHIP, SCHEMA }
+    enum SubjectKind { ENTITY, RELATIONSHIP, SCHEMA, SOURCE }
 }

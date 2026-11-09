@@ -1,16 +1,18 @@
 kind: EntityType
 name: JavaClass
-version: 1.0.0
-displayName: Java type
-description: A Java class, interface, enum or record, identified by repository and fully qualified name.
+version: 1.1.0
+description: A Java class, interface, enum, record or annotation, identified by repository and fully qualified name.
 category: technical
 properties:
   repository: { type: string, required: true }
   fqcn: { type: string, required: true }
   kind: { type: string, enum: [class, interface, enum, record, annotation] }
   path: { type: string, description: Source path at the analysed version; not part of identity }
-identity:
-  strategy: naturalKey
-  naturalKey: [repository, fqcn]
-retrieval:
-  displayProperty: fqcn
+  packageName: { type: string }
+  annotations: { type: string-list }
+  superTypes: { type: string-list, description: Supertypes outside the repository }
+  lineStart: { type: integer }
+  lineEnd: { type: integer }
+  test: { type: boolean }
+identity: { strategy: naturalKey, naturalKey: [repository, fqcn] }
+retrieval: { displayProperty: fqcn }

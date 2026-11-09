@@ -1,0 +1,16 @@
+kind: EntityType
+name: LogStatement
+version: 1.0.0
+description: A log call in a method, in source order (code only; no environment config).
+category: technical
+properties:
+  repository: { type: string, required: true }
+  fqcn: { type: string, required: true }
+  signature: { type: string, required: true }
+  order: { type: integer, required: true }
+  level: { type: string, enum: [TRACE, DEBUG, INFO, WARN, ERROR] }
+  template: { type: text }
+  loggerClass: { type: string }
+identity: { strategy: naturalKey, naturalKey: [repository, fqcn, signature, order] }
+embedding: { indexFields: [template] }
+retrieval: { displayProperty: template }

@@ -35,7 +35,9 @@ Status: **accepted** (M1, 2026-11-09). Implements plan §4 (ADR-002) and §6 (AD
    registered through REST is skipped and logged), and **backwards compatible** (`SchemaCompatibility`): no
    removed properties, type changes, optional→required changes, narrowed enums, new patterns, new required
    properties, identity changes or narrowed endpoints. Breaking changes are rejected with the reasons, because
-   declared migrations are not implemented yet (spec §13.2, planned later).
+   declared migrations are not implemented yet (spec §13.2, planned later). **Exception (M2):** a breaking
+   change is allowed while the type has no instances at all (no entity or assertion of that type), because
+   nothing needs migrating; the decision is logged. `ApiOperation` 2.0.0 used this.
 3. Each registration is a `:SchemaDefinition` node (all versions kept, one `current: true`) plus a
    `SCHEMA_REGISTERED` event, written in one transaction through the single writer.
 4. Lifecycle: `deprecated` types still accept writes. `retired` types reject writes but stay readable, so historical

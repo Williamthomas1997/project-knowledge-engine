@@ -25,7 +25,7 @@ class KnowledgeValidatorTest {
     @Test
     void reportsEveryProblemWithItsPath() {
         List<Violation> violations = new ArrayList<>();
-        validator.entity("ApiOperation", Map.of("service", "transfer", "httpMethod", "FETCH", "pathTemplate", "no-slash",
+        validator.entity("ApiOperation", Map.of("layer", "service", "gatewayKey", "", "service", "transfer", "httpMethod", "FETCH", "pathTemplate", "no-slash",
                 "colour", "red", "summary", 5), "/e", violations);
         assertThat(violations).extracting(Violation::path).containsExactlyInAnyOrder(
                 "/e/properties/httpMethod", "/e/properties/pathTemplate", "/e/properties/colour",

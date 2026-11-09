@@ -1,0 +1,10 @@
+kind: EntityType
+name: JourneyStep
+version: 1.0.0
+description: One step of a user journey. Step names per source are kept in evidence.
+category: business
+properties:
+  journeyKey: { type: string, required: true }
+  order: { type: integer, required: true }
+identity: { strategy: naturalKey, naturalKey: [journeyKey, order] }
+retrieval: { displayProperty: journeyKey }

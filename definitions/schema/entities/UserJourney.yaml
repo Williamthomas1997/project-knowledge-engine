@@ -1,0 +1,12 @@
+kind: EntityType
+name: UserJourney
+version: 1.0.0
+description: A user journey, the ordered APIs a client calls to complete a task.
+category: business
+properties:
+  journeyKey: { type: string, required: true }
+  name: { type: string, required: true }
+  description: { type: text }
+identity: { strategy: naturalKey, naturalKey: [journeyKey] }
+embedding: { indexFields: [description] }
+retrieval: { displayProperty: name }

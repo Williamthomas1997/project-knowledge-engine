@@ -98,6 +98,14 @@ class Neo4jSchemaDefinitionStore implements SchemaDefinitionStore {
         });
     }
 
+    @Override
+    public long instanceCount(DefinitionKind kind, String name) {
+        String cypher = kind == DefinitionKind.ENTITY_TYPE
+                ? "MATCH (n:Entity {pke_type: $name}) RETURN count(n) AS c"
+                : "MATCH (a:Assertion {pke_type: $name}) RETURN count(a) AS c";
+        return ((Number) reader.single(cypher, Map.of("name", name)).orElseThrow().get("c")).longValue();
+    }
+
     private static StoredDefinition stored(Map<String, Object> row) {
         return new StoredDefinition((String) row.get("kind"), (String) row.get("name"), (String) row.get("version"),
                 (String) row.get("status"), (String) row.get("hash"), (String) row.get("json"),

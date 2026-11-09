@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="International Transfer" enabled="true"/>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Customers" enabled="true"/>
+      <hashTree>
+      <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="ft-accounts" enabled="true"/>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="ft-accounts request" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <stringProp name="Argument.value">{&quot;customerType&quot;: &quot;RETAIL&quot;}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${host}</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v1/get-ft-accounts</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+            <elementProp name="moduleId" elementType="Header">
+              <stringProp name="Header.name">moduleId</stringProp>
+              <stringProp name="Header.value">TRANSFERS</stringProp>
+            </elementProp>
+            <elementProp name="subModuleId" elementType="Header">
+              <stringProp name="Header.name">subModuleId</stringProp>
+              <stringProp name="Header.value">FUND_TRANSFERS</stringProp>
+            </elementProp>
+            <elementProp name="serviceId" elementType="Header">
+              <stringProp name="Header.name">serviceId</stringProp>
+              <stringProp name="Header.value">MENUS</stringProp>
+            </elementProp>
+            <elementProp name="screenId" elementType="Header">
+              <stringProp name="Header.name">screenId</stringProp>
+              <stringProp name="Header.value">SCREEN1</stringProp>
+            </elementProp>
+            <elementProp name="unit" elementType="Header">
+              <stringProp name="Header.name">unit</stringProp>
+              <stringProp name="Header.value">DEFAULT</stringProp>
+            </elementProp>
+            <elementProp name="channel" elementType="Header">
+              <stringProp name="Header.name">channel</stringProp>
+              <stringProp name="Header.value">MB</stringProp>
+            </elementProp>
+            <elementProp name="Authorization" elementType="Header">
+              <stringProp name="Header.name">Authorization</stringProp>
+              <stringProp name="Header.value">Bearer ${token}</stringProp>
+            </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="auid" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">auid</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.auid</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="InitiateTransfer" enabled="true"/>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="InitiateTransfer request" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <stringProp name="Argument.value">{&quot;auid&quot;: &quot;${auid}&quot;, &quot;amount&quot;: 100, &quot;currency&quot;: &quot;USD&quot;}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${host}</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v2/international-transfers/validation</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+            <elementProp name="moduleId" elementType="Header">
+              <stringProp name="Header.name">moduleId</stringProp>
+              <stringProp name="Header.value">TRANSFER</stringProp>
+            </elementProp>
+            <elementProp name="subModuleId" elementType="Header">
+              <stringProp name="Header.name">subModuleId</stringProp>
+              <stringProp name="Header.value">INTERNATIONAL</stringProp>
+            </elementProp>
+            <elementProp name="serviceId" elementType="Header">
+              <stringProp name="Header.name">serviceId</stringProp>
+              <stringProp name="Header.value">INTL_TRANSFER</stringProp>
+            </elementProp>
+            <elementProp name="screenId" elementType="Header">
+              <stringProp name="Header.name">screenId</stringProp>
+              <stringProp name="Header.value">INTL_01</stringProp>
+            </elementProp>
+            <elementProp name="unit" elementType="Header">
+              <stringProp name="Header.name">unit</stringProp>
+              <stringProp name="Header.value">DEFAULT</stringProp>
+            </elementProp>
+            <elementProp name="channel" elementType="Header">
+              <stringProp name="Header.name">channel</stringProp>
+              <stringProp name="Header.value">MB</stringProp>
+            </elementProp>
+            <elementProp name="Authorization" elementType="Header">
+              <stringProp name="Header.name">Authorization</stringProp>
+              <stringProp name="Header.value">Bearer ${token}</stringProp>
+            </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="uuid" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">uuid</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.uuid</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="FinalSubmit" enabled="true"/>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="FinalSubmit request" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <stringProp name="Argument.value">{&quot;uuid&quot;: &quot;${uuid}&quot;, &quot;otp&quot;: &quot;111111&quot;}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${host}</stringProp>
+          <stringProp name="HTTPSampler.path">/api/v3/international-transfers/execute</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Headers" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+            <elementProp name="moduleId" elementType="Header">
+              <stringProp name="Header.name">moduleId</stringProp>
+              <stringProp name="Header.value">TRANSFER</stringProp>
+            </elementProp>
+            <elementProp name="subModuleId" elementType="Header">
+              <stringProp name="Header.name">subModuleId</stringProp>
+              <stringProp name="Header.value">INTERNATIONAL</stringProp>
+            </elementProp>
+            <elementProp name="serviceId" elementType="Header">
+              <stringProp name="Header.name">serviceId</stringProp>
+              <stringProp name="Header.value">INTL_TRANSFER</stringProp>
+            </elementProp>
+            <elementProp name="screenId" elementType="Header">
+              <stringProp name="Header.name">screenId</stringProp>
+              <stringProp name="Header.value">INTL_01</stringProp>
+            </elementProp>
+            <elementProp name="unit" elementType="Header">
+              <stringProp name="Header.name">unit</stringProp>
+              <stringProp name="Header.value">DEFAULT</stringProp>
+            </elementProp>
+            <elementProp name="channel" elementType="Header">
+              <stringProp name="Header.name">channel</stringProp>
+              <stringProp name="Header.value">MB</stringProp>
+            </elementProp>
+            <elementProp name="Authorization" elementType="Header">
+              <stringProp name="Header.name">Authorization</stringProp>
+              <stringProp name="Header.value">Bearer ${token}</stringProp>
+            </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

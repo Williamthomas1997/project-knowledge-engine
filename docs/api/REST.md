@@ -1,4 +1,4 @@
-# REST API (M1)
+# REST API (M2)
 
 Base URL `http://localhost:8080`. JSON unless stated. Errors are RFC 9457 problem details. Validation errors list
 every problem in `violations: [{path, message}]`.
@@ -68,3 +68,25 @@ returns `UNCHANGED` and writes nothing.
 | `GET /api/history/events?afterSeq=0&limit=100&subjectId=` | Change events in `seq` order |
 | `GET /api/integrity` | Assertion ↔ native edge consistency report |
 | `GET /api/system/info` · `GET /actuator/health` | Versions and model availability; health |
+
+## Sources (M2)
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/sources/documents` | Multipart `file` (+ optional `key` = `doc:<slug>`, `name`). `201` new version, `200` unchanged/reparsed/reinstated. Returns the version, `parseStatus` (`PARSED`, `EMPTY`, `OCR_REQUIRED`) and section count |
+| `POST /api/sources/repositories` | `{name, path, serviceName?}`: registers a local Git repository (`repo:<name>`). `serviceName` must match the gateway route's service (e.g. `international-transfer-service`) |
+| `GET /api/sources?kind=` · `GET /api/sources/{key}` | Sources; one source with its current version |
+| `GET /api/sources/{key}/versions` | Document versions (content hashes) or recorded commits |
+| `GET /api/sources/{key}/sections?version=` | Sections of the current (or a given) document version |
+| `DELETE /api/sources/{key}` | `{reason?}`: marks the source removed; versions, sections and evidence are kept |
+| `GET /api/sources/sections/search?q=&limit=` | Fulltext search over current sections (not embedded) |
+
+## Ingestion and journeys (M2)
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/ingestion/runs` | `{kind: REPOSITORY\|ROUTES, target: <repository name>, mode: FULL\|INCREMENTAL}`. `202` with the run; `?wait=true` runs it before replying |
+| `GET /api/ingestion/runs?target=&limit=` · `GET /api/ingestion/runs/{id}` | Runs: `status` (`PENDING`, `RUNNING`, `COMPLETED`, `PARTIAL`, `FAILED`), commits, `statsJson` (outcome counts, journeys, routes, failures), `unresolvedJson` (first 200) |
+| `POST /api/ingestion/runs/{id}/retry` | New attempt with the same parameters |
+| `GET /api/journeys` | Journeys with step counts and sources |
+| `GET /api/journeys/{idOrKey}` | Ordered steps with their gateway APIs, handler methods and per-source labels; data flow (`FEEDS`); covering suites |

@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: LOGS
+version: 1.0.0
+description: The method emits the log statement; order is its position in the method.
+category: technical
+sourceTypes: [JavaMethod]
+targetTypes: [LogStatement]
+properties:
+  order: { type: integer, required: true }
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.3 }

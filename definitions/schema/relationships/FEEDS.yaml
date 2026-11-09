@@ -1,0 +1,14 @@
+kind: RelationshipType
+name: FEEDS
+version: 1.0.0
+description: Data from the source step's response is sent by the target step (data flow).
+category: business
+sourceTypes: [JourneyStep]
+targetTypes: [JourneyStep]
+properties:
+  field: { type: string, required: true, description: Field or header the target step sends }
+  variable: { type: string, description: Variable name used in the source }
+identity: { discriminator: [field] }
+evidence: { required: true }
+policy: { discovery: [deterministic, manual], approval: auto }
+queryHints: { direction: out, weight: 0.6 }

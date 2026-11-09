@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: HAS_STEP
+version: 1.0.0
+description: The journey contains the step at the given order.
+category: business
+sourceTypes: [UserJourney]
+targetTypes: [JourneyStep]
+properties:
+  order: { type: integer, required: true }
+evidence: { required: true }
+policy: { discovery: [deterministic, manual], approval: auto }
+queryHints: { direction: out, weight: 0.9 }

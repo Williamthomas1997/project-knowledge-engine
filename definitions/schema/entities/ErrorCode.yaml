@@ -1,0 +1,11 @@
+kind: EntityType
+name: ErrorCode
+version: 1.0.0
+description: An application error code (from code constants or error-configuration scripts).
+category: technical
+properties:
+  code: { type: string, required: true }
+  constantName: { type: string }
+  sources: { type: string-list }
+identity: { strategy: naturalKey, naturalKey: [code] }
+retrieval: { displayProperty: code }

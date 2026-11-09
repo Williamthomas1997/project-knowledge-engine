@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: CONSUMES_FROM
+version: 1.0.0
+description: The method listens to the Kafka topic.
+category: technical
+sourceTypes: [JavaMethod]
+targetTypes: [KafkaTopic]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.7 }

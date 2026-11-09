@@ -21,6 +21,9 @@ public interface SchemaDefinitionStore {
      */
     Registration register(DefinitionDocument document, String actor);
 
+    /** Number of entities (entity type) or assertions (relationship type) of this type, current or not. */
+    long instanceCount(DefinitionKind kind, String name);
+
     record StoredDefinition(String kind, String name, String version, String status, String hash, String definitionJson,
                             long registeredSeq, boolean current) {
     }

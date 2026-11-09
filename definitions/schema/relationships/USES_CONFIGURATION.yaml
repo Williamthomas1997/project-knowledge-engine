@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: USES_CONFIGURATION
+version: 1.0.0
+description: The code reads the configuration key or binds the prefix.
+category: technical
+sourceTypes: [JavaClass, JavaMethod]
+targetTypes: [ConfigProperty]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.5 }

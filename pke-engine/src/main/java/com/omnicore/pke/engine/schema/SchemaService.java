@@ -172,8 +172,15 @@ public class SchemaService {
             }
             List<String> breaking = SchemaCompatibility.breakingChanges(existing.definition(), document.definition());
             if (!breaking.isEmpty()) {
-                throw new ConflictException(document.key() + " is not backwards compatible with " + existing.version()
-                        + " and needs a migration, which is not supported yet: " + String.join("; ", breaking));
+                long instances = store.instanceCount(document.kind(), document.name());
+                if (instances > 0) {
+                    throw new ConflictException(document.key() + " is not backwards compatible with " + existing.version()
+                            + " and " + instances + " existing instance(s) would need a migration, which is not supported yet: "
+                            + String.join("; ", breaking));
+                }
+                // Nothing to migrate: a breaking change to a type without data is safe (ADR-010).
+                log.info("{} replaces {} with breaking changes; allowed because the type has no instances: {}",
+                        document.key(), existing.version(), breaking);
             }
         }
         SchemaDefinitionStore.Registration registration = store.register(document, actor);

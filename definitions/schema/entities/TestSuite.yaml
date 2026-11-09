@@ -1,0 +1,12 @@
+kind: EntityType
+name: TestSuite
+version: 1.0.0
+description: A TestNG suite (suite XML) that groups test classes.
+category: verification
+properties:
+  repository: { type: string, required: true }
+  name: { type: string, required: true }
+  file: { type: string }
+  classes: { type: string-list }
+identity: { strategy: naturalKey, naturalKey: [repository, name] }
+retrieval: { displayProperty: name }

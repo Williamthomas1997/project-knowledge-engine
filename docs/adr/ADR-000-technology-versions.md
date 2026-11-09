@@ -26,12 +26,13 @@ dependencies yet.
 | Neo4j server (tests, compose) | `neo4j:2026.10.1-community` | `neo4j.test.image` property | Newest stable Docker tag; well above the 5.26 minimum for dynamic labels/types | Docker Hub tag list; `Neo4jDynamicLabelIT` passes against it |
 | Neo4j server (Desktop) | Enterprise 2026.09.0 | local install | Already installed; supports `CREATE DATABASE` for a separate `pketest` DB | `~/.Neo4jDesktop2/Cache/dbmss` |
 | ArchUnit (`archunit-junit5`) | 1.5.1 | explicit | Latest stable; supports Java 21 bytecode | Maven Central; `ArchitectureTest` runs |
-| JavaParser (`javaparser-symbol-solver-core`) | 3.28.2 | explicit, unused until M2 | Latest stable | Maven Central metadata |
-| Eclipse JGit | 7.8.1.202611041320-r | explicit, unused until M2 | Latest stable; Java 17+ | Maven Central metadata |
-| Apache Tika (`tika-core`, `tika-parsers-standard-package`) | 4.2.0 | explicit, unused until M2 | Latest stable | Maven Central metadata |
+| JavaParser (`javaparser-symbol-solver-core`) | 3.28.2 | explicit, used from M2 | Latest stable; Java 21 language level | Maven Central metadata; `JavaSourceExtractorTest` |
+| Eclipse JGit | 7.8.1.202611041320-r | explicit, used from M2 | Latest stable; Java 17+ | Maven Central metadata; `RepositoryIngestionIT` |
+| Apache Tika (`tika-bom` → `tika-core`, `tika-parser-{pdf,microsoft,html,text}-module`) | 4.2.0 | `tika-bom` import, used from M2 | Latest stable. Only the needed parser modules, not the full standard package (which adds OCR, mail, CAD, ...). Tika 4 parses `TikaInputStream` | Maven Central; `ExtractHelpersTest`, `DocumentIngestionIT` |
+| CommonMark (`org.commonmark:commonmark`) | 0.32.0 | explicit | Markdown structure (headings → sections) | Maven Central metadata |
 | `com.networknt:json-schema-validator` | 3.0.9 | explicit, used from M1 | Latest stable; JSON Schema 2020-12 | Its POM depends on `tools.jackson.core:jackson-databind` **3.x** (3.1.8); Boot's BOM pins Jackson 3.1.7, which it runs on (all schema tests pass). Decision recorded below |
 | swagger-parser v3 | 2.1.48 | explicit, unused until M2 | Latest stable | Maven Central metadata |
-| JSqlParser | 5.4 | explicit, unused until M2 | Latest stable | Maven Central metadata |
+| JSqlParser | 5.4 | pinned only, **not used** | M2 needed only `INSERT ... VALUES` rows from error-config and route scripts; a small quote-aware reader (`SqlInserts`) handles them, including Oracle/Postgres quoting | — |
 | `tools.jackson.dataformat:jackson-dataformat-yaml` | 3.1.7 | Boot BOM | Parses YAML schema definitions with Boot's Jackson 3 | Boot BOM |
 | Maven | 3.9.11 (wrapper) | `.mvn/wrapper` | Matches the installed Maven | `mvn -v` |
 
