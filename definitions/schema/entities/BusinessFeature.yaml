@@ -1,0 +1,18 @@
+kind: EntityType
+name: BusinessFeature
+version: 1.0.0
+displayName: Business feature
+description: A business capability or application feature, for example international transfer.
+category: business
+properties:
+  featureKey: { type: string, required: true, description: "Stable key, e.g. international-transfer" }
+  name: { type: string, required: true }
+  description: { type: text }
+  status: { type: string }
+identity:
+  strategy: naturalKey
+  naturalKey: [featureKey]
+embedding:
+  indexFields: [description]
+retrieval:
+  displayProperty: name

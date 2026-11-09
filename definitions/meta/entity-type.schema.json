@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/entity-type.schema.json",
+  "title": "PKE entity type definition",
+  "description": "Defines a dynamically registered entity type. Checks that need the registry (declared properties, reserved names) are done in code by SchemaDefinitionParser.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "name", "version", "description", "properties"],
+  "properties": {
+    "kind": { "const": "EntityType" },
+    "name": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]{1,63}$", "description": "PascalCase; becomes the Neo4j label" },
+    "version": { "$ref": "#/$defs/semver" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "category": { "$ref": "#/$defs/category" },
+    "status": { "enum": ["active", "deprecated", "retired"], "default": "active" },
+    "properties": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/propertyName" },
+      "additionalProperties": { "$ref": "#/$defs/property" }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "enum": ["naturalKey", "explicit", "generated"],
+          "description": "naturalKey: id = UUIDv5(type, key values); explicit: caller supplies a canonical id; generated: UUIDv7"
+        },
+        "naturalKey": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/propertyName" }
+        }
+      },
+      "if": { "properties": { "strategy": { "const": "naturalKey" } } },
+      "then": { "required": ["naturalKey"] },
+      "else": { "not": { "required": ["naturalKey"] } }
+    },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "embedding": {
+      "type": "object",
+      "description": "Fields to embed into vector collections (ADR-007). Stored only; no embedding behaviour until M4.",
+      "additionalProperties": false,
+      "required": ["indexFields"],
+      "properties": {
+        "indexFields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/propertyName" }
+        },
+        "collection": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9_]{1,127}$" }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "description": "Free-form hints for extractors and skills (which methods may produce this type)."
+    },
+    "retrieval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "displayProperty": { "$ref": "#/$defs/propertyName" },
+        "searchFields": { "type": "array", "items": { "$ref": "#/$defs/propertyName" }, "uniqueItems": true }
+      }
+    }
+  },
+  "$defs": {
+    "semver": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "category": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+    "propertyName": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9_]{0,63}$",
+      "not": { "pattern": "^pke_" }
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["string", "text", "integer", "number", "boolean", "datetime", "string-list"] },
+        "required": { "type": "boolean", "default": false },
+        "description": { "type": "string" },
+        "enum": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+        "pattern": { "type": "string", "minLength": 1 },
+        "deprecated": { "type": "boolean", "default": false }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean", "default": false },
+        "minItems": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

@@ -1,10 +1,12 @@
 package com.omnicore.pke.engine.ops;
 
+import com.omnicore.pke.engine.graph.GraphReader;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.data.neo4j.core.Neo4jClient;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,14 +14,15 @@ import org.springframework.stereotype.Component;
  * older than the minimum version the graph representation (ADR-001) relies on.
  */
 @Component
+@Order(0)
 public class Neo4jCapabilityCheck implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(Neo4jCapabilityCheck.class);
 
-    private final Neo4jClient neo4jClient;
+    private final GraphReader graphReader;
 
-    public Neo4jCapabilityCheck(Neo4jClient neo4jClient) {
-        this.neo4jClient = neo4jClient;
+    public Neo4jCapabilityCheck(GraphReader graphReader) {
+        this.graphReader = graphReader;
     }
 
     @Override
@@ -34,14 +37,11 @@ public class Neo4jCapabilityCheck implements ApplicationRunner {
     }
 
     public Neo4jServerInfo detect() {
-        return neo4jClient.query("""
+        return graphReader.single("""
                         CALL dbms.components() YIELD name, versions, edition
                         WHERE name = 'Neo4j Kernel'
-                        RETURN versions[0] AS version, edition""")
-                .fetchAs(Neo4jServerInfo.class)
-                .mappedBy((typeSystem, record) -> new Neo4jServerInfo(
-                        record.get("version").asString(), record.get("edition").asString()))
-                .one()
+                        RETURN versions[0] AS version, edition""", Map.of())
+                .map(row -> new Neo4jServerInfo((String) row.get("version"), (String) row.get("edition")))
                 .orElseThrow(() -> new IllegalStateException("dbms.components() returned no 'Neo4j Kernel' entry"));
     }
 }

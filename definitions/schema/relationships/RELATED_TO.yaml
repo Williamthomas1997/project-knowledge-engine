@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: RELATED_TO
+version: 1.0.0
+description: A generic, explained business relationship. Prefer a specific type when one exists.
+category: business
+sourceTypes: ["*"]
+targetTypes: ["*"]
+properties:
+  rationale: { type: text, required: true }
+evidence: { required: true }
+policy: { discovery: [ai, manual], approval: inferred }
+queryHints: { direction: both, weight: 0.3 }

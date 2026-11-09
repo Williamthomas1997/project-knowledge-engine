@@ -29,9 +29,10 @@ dependencies yet.
 | JavaParser (`javaparser-symbol-solver-core`) | 3.28.2 | explicit, unused until M2 | Latest stable | Maven Central metadata |
 | Eclipse JGit | 7.8.1.202611041320-r | explicit, unused until M2 | Latest stable; Java 17+ | Maven Central metadata |
 | Apache Tika (`tika-core`, `tika-parsers-standard-package`) | 4.2.0 | explicit, unused until M2 | Latest stable | Maven Central metadata |
-| `com.networknt:json-schema-validator` | 3.0.9 | explicit, unused until M1 | Latest stable; JSON Schema 2020-12 | Maven Central metadata. **Check its Jackson major version in M1** (Boot 4 uses Jackson 3) |
+| `com.networknt:json-schema-validator` | 3.0.9 | explicit, used from M1 | Latest stable; JSON Schema 2020-12 | Its POM depends on `tools.jackson.core:jackson-databind` **3.x** (3.1.8); Boot's BOM pins Jackson 3.1.7, which it runs on (all schema tests pass). Decision recorded below |
 | swagger-parser v3 | 2.1.48 | explicit, unused until M2 | Latest stable | Maven Central metadata |
 | JSqlParser | 5.4 | explicit, unused until M2 | Latest stable | Maven Central metadata |
+| `tools.jackson.dataformat:jackson-dataformat-yaml` | 3.1.7 | Boot BOM | Parses YAML schema definitions with Boot's Jackson 3 | Boot BOM |
 | Maven | 3.9.11 (wrapper) | `.mvn/wrapper` | Matches the installed Maven | `mvn -v` |
 
 ## Spring AI model switches (verified in bytecode)
@@ -45,6 +46,9 @@ audio.transcription}=none`, and `application-openai.yml` sets chat and embedding
 ## Consequences
 
 - Boot 4 uses Jackson 3 (`tools.jackson.*`). Libraries that bring Jackson 2 must be checked when they are
-  added (json-schema-validator, swagger-parser).
+  added. **M1 result:** json-schema-validator 3.0.9 is already on Jackson 3 (`tools.jackson`), so it shares Boot's
+  Jackson and needs no isolated Jackson 2 ObjectMapper or alternative validator. Boot pins the patch level
+  (3.1.7 instead of the 3.1.8 the library declares); `SchemaDefinitionParserTest` and `SchemaRegistryIT` run on it.
+  swagger-parser (M2) still needs checking.
 - Moving to Boot 4.2 needs a Spring AI release built against it. Upgrade both together.
 - MCP: Spring AI 2.0.2 provides `spring-ai-starter-mcp-server-webmvc` (checked on Maven Central). It is added in M6.

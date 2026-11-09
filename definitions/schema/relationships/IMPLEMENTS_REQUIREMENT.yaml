@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: IMPLEMENTS_REQUIREMENT
+version: 1.0.0
+description: The source code element or API implements (part of) the business requirement. Never implied by shared utilities.
+category: business
+sourceTypes: [ApiOperation, JavaMethod, JavaClass]
+targetTypes: [BusinessRequirement]
+properties:
+  rationale: { type: text }
+evidence: { required: true }
+policy: { discovery: [ai, manual], approval: inferred }
+queryHints: { traverse: true, direction: both, weight: 0.9 }

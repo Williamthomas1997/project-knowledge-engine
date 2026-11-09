@@ -18,7 +18,7 @@ milestones. Nothing here is implemented yet.
 | Neo4j | Neo4j Desktop 2 with **Enterprise 2026.09.0**; Docker Desktop 29.4 | Tests: Testcontainers `neo4j:2026.10.1-community`, or Desktop `pketest` DB |
 | Build machine (2026-11-05) | Windows: JDK 21.0.11, Maven 3.9.11, Maven Central and Docker Hub reachable | **Claude builds and tests directly.** R1 resolved |
 | Linux shell on your PC | Java 11, no Maven, Maven Central blocked | Can't build there either |
-| Real Dukhan code/BRDs | Present locally | Not used for the demo — see R7 (data policy) |
+| Real Dukhan code/BRDs | Present locally | Read-only smoke checks; OpenAI use approved (R7). Tests use the synthetic demo corpus |
 
 All library versions were verified in M0 and are recorded in `docs/adr/ADR-000-technology-versions.md`.
 
@@ -97,6 +97,12 @@ relationships and cheap traversal. Requires Neo4j ≥ 5.26 for dynamic labels/ty
 ---
 
 ## 3. Core data model
+
+> **Implemented in M1** (see ADR-008 Community features, ADR-009 single writer and write protocol, ADR-010 definition
+> format and identity). Differences from the sketch below: evidence stores `sourceArtifactId`/`sourceVersion` as
+> properties until source nodes exist (M2 adds `-[:FROM]->(:SourceVersion)`); assertions also carry Graphiti-style
+> `pke_validAt`/`pke_invalidAt` (ADR-007 §5); `:Conflict` and `:Snapshot` arrive in M3/M5.
+
 
 ```
 (:SourceArtifact {pke_id, kind, logicalKey})-[:HAS_VERSION]->(:SourceVersion {contentHash, gitCommit?, docVersion, blobRef, ingestedAt})
@@ -274,11 +280,11 @@ failure → keep diagnostics, revert worktree/registry, restore from pre-change 
 |---|---|---|
 | ~~R1~~ | ~~Can't build or test from the sandbox~~ | **Resolved 2026-11-05**: Claude builds and tests on the Windows machine (Maven Central + Docker reachable) |
 | ~~R2~~ | ~~Versions unverified~~ | **Resolved in M0**: Boot 4.1.2, Spring AI 2.0.2, driver 6.1.0, Testcontainers 2.0.5 (ADR-000) |
-| R3 | Neo4j Community lacks multi-database & online backup | Sandbox = second Neo4j instance (Docker/Testcontainers or Desktop DB); dump-based backups |
-| R4 | Global sequence serialises writes | Acceptable now; batch writes per pipeline step; revisit with measurements |
+| R3 | Neo4j Community lacks multi-database, online backup, existence/type constraints | Community-only features (ADR-008); required properties enforced by the validator; sandbox = second instance; dump-based backups |
+| R4 | Global sequence serialises writes | Accepted and implemented (ADR-009); `ConcurrentWritesIT` proves gap-free ordered `seq` under 8 writers. Batch writes per pipeline step; revisit with measurements |
 | R5 | LLM extraction quality / false business links | Evidence-required policies, inferred status, evaluation sets, review gate for high-impact types |
 | R6 | Self-modifying code safety | Worktree isolation, path allowlist, no-network sandboxed build, policy-gated activation, audit events |
-| **R7** | **Bank data to an external LLM**: sending Dukhan BRDs/source to OpenAI may breach bank policy | Demo uses a synthetic corpus; provider configurable (OpenAI / Azure OpenAI / local Ollama). **Confirm what's allowed before ingesting real repos** |
+| ~~R7~~ | ~~Bank data to an external LLM~~ | **Decided 2026-11-09**: OpenAI is approved for real Dukhan repos and documents. Automated tests keep using the synthetic `demo/` corpus so they stay reproducible and need no key |
 | R8 | Scope (7 phases) is large | Working vertical slice at every milestone; demo scenario grows with each one |
 
 **Reversible defaults I've chosen** (tell me if any is wrong): project name

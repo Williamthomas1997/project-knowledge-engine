@@ -1,0 +1,12 @@
+kind: RelationshipType
+name: CALLS
+version: 1.0.0
+description: The source method invokes the target method (static call resolution).
+category: technical
+sourceTypes: [JavaMethod]
+targetTypes: [JavaMethod]
+properties:
+  callCount: { type: integer, description: Number of call sites in the source method }
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.6 }

@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/relationship-type.schema.json",
+  "title": "PKE relationship type definition",
+  "description": "Defines a dynamically registered relationship type. Endpoint types must already be registered; that check is done in code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "name",
+    "version",
+    "description",
+    "category",
+    "sourceTypes",
+    "targetTypes"
+  ],
+  "properties": {
+    "kind": {
+      "const": "RelationshipType"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,63}$",
+      "description": "UPPER_SNAKE_CASE; becomes the Neo4j relationship type"
+    },
+    "version": {
+      "$ref": "#/$defs/semver"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Semantics: what it means for the relationship to hold"
+    },
+    "category": {
+      "$ref": "#/$defs/category",
+      "description": "business, technical, verification, operational, lifecycle or any new category. Business and technical relationships are kept apart in traversal."
+    },
+    "status": {
+      "enum": [
+        "active",
+        "deprecated",
+        "retired"
+      ],
+      "default": "active"
+    },
+    "sourceTypes": {
+      "$ref": "#/$defs/endpointTypes"
+    },
+    "targetTypes": {
+      "$ref": "#/$defs/endpointTypes"
+    },
+    "properties": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/propertyName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/property"
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "discriminator": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/propertyName"
+          },
+          "description": "Properties that distinguish parallel relationships of this type between the same two entities"
+        }
+      }
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "validity": {
+          "enum": [
+            "interval",
+            "none"
+          ],
+          "default": "interval"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "discovery": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "deterministic",
+              "ai",
+              "manual"
+            ]
+          }
+        },
+        "approval": {
+          "enum": [
+            "auto",
+            "inferred",
+            "review"
+          ],
+          "default": "auto"
+        }
+      }
+    },
+    "queryHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "traverse": {
+          "type": "boolean",
+          "default": true
+        },
+        "direction": {
+          "enum": [
+            "out",
+            "in",
+            "both"
+          ],
+          "default": "both"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "endpointTypes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "anyOf": [
+          {
+            "pattern": "^[A-Z][A-Za-z0-9]{1,63}$"
+          },
+          {
+            "const": "*"
+          }
+        ]
+      }
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "category": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$"
+    },
+    "propertyName": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9_]{0,63}$",
+      "not": {
+        "pattern": "^pke_"
+      }
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "text",
+            "integer",
+            "number",
+            "boolean",
+            "datetime",
+            "string-list"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": {
+          "type": "string"
+        },
+        "enum": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

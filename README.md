@@ -4,8 +4,10 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M0, build skeleton.** No knowledge features yet. See `docs/IMPLEMENTATION_PLAN.md` §13 for milestones
-and `docs/reports/` for what each milestone actually delivered.
+Status: **M1, foundation.** The schema registry (YAML definitions validated by JSON Schema 2020-12), the single
+graph writer (entities, relationships, evidence, versions and change events in one transaction) and REST APIs are
+done. Ingestion, retrieval and AI arrive in M2–M4. See `docs/IMPLEMENTATION_PLAN.md` §13 and ADR-007 for the
+milestones, and `docs/reports/` for what each milestone actually delivered.
 
 ## Prerequisites
 
@@ -58,7 +60,9 @@ java -jar pke-engine/target/pke-engine-0.1.0-SNAPSHOT.jar
 java -jar pke-engine/target/pke-engine-0.1.0-SNAPSHOT.jar --spring.profiles.active=openai
 ```
 
-The app refuses to start if Neo4j is older than 5.26.
+The app refuses to start if Neo4j is older than 5.26. At startup it creates its constraints and indexes
+(Community features only, ADR-008) and registers the definitions in `definitions/schema/` that are not registered
+yet (ADR-010). A restart registers nothing new.
 
 ```bash
 curl http://localhost:8080/api/system/info
@@ -69,14 +73,35 @@ curl http://localhost:8080/api/system/info
 
 Health: `GET /actuator/health` (includes Neo4j).
 
+### Try it
+
+```bash
+# write two methods and a CALLS relationship (natural-key references, so no ids are needed)
+curl -X POST localhost:8080/api/knowledge/changes -H 'Content-Type: application/json' -d '{
+  "entities": [
+    {"type":"JavaMethod","properties":{"repository":"demo","fqcn":"com.demo.TransferService","signature":"transfer(TransferRequest)"},"epistemic":"EXTRACTED_DETERMINISTIC"},
+    {"type":"JavaMethod","properties":{"repository":"demo","fqcn":"com.demo.CurrencyConverter","signature":"convert(Money,String)"},"epistemic":"EXTRACTED_DETERMINISTIC"}],
+  "relationships": [
+    {"type":"CALLS",
+     "subject":{"type":"JavaMethod","key":{"repository":"demo","fqcn":"com.demo.TransferService","signature":"transfer(TransferRequest)"}},
+     "object":{"type":"JavaMethod","key":{"repository":"demo","fqcn":"com.demo.CurrencyConverter","signature":"convert(Money,String)"}},
+     "properties":{"callCount":1},"epistemic":"EXTRACTED_DETERMINISTIC",
+     "evidence":[{"sourceArtifactId":"repo:demo","sourceVersion":"c1","location":"TransferService.java:42","extractionMethod":"extract.java"}]}]}'
+curl localhost:8080/api/history/events
+curl localhost:8080/api/integrity
+```
+
+The full endpoint list is in [`docs/api/REST.md`](docs/api/REST.md). **There is no authentication before M6, and
+`/actuator/health` shows details.** Keep the service on localhost.
+
 ## Layout
 
 ```
 pke-spi/       plugin contracts (plain Java, no Spring, enforced)
 pke-engine/    the Spring Boot application (packages listed in IMPLEMENTATION_PLAN §1)
 pke-plugins/   Level-3 plugins, one sub-module each
-definitions/   Git-versioned schemas, pipelines, skills, policies, prompts (from M1)
+definitions/   Git-versioned definitions: meta/ (JSON Schema 2020-12), schema/ (entity + relationship types)
 demo/ eval/    synthetic demo project and evaluation datasets (M2, M3)
 docker/        compose file for a local Neo4j
-docs/          spec, plan, ADRs, milestone reports
+docs/          spec, plan, ADRs (adr/), REST reference (api/), milestone prompts and reports
 ```

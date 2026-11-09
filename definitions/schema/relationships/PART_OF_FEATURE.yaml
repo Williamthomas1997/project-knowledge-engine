@@ -1,0 +1,9 @@
+kind: RelationshipType
+name: PART_OF_FEATURE
+version: 1.0.0
+description: The requirement belongs to the business feature.
+category: business
+sourceTypes: [BusinessRequirement]
+targetTypes: [BusinessFeature]
+policy: { discovery: [ai, manual], approval: inferred }
+queryHints: { direction: both, weight: 0.8 }

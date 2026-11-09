@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: TESTED_BY
+version: 1.0.0
+description: The element is exercised by the test case.
+category: verification
+sourceTypes: ["*"]
+targetTypes: [TestCase]
+evidence: { required: true }
+policy: { discovery: [deterministic, ai], approval: auto }
+queryHints: { direction: out, weight: 0.5 }

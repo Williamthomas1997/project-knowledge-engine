@@ -1,0 +1,20 @@
+kind: EntityType
+name: JavaMethod
+version: 1.0.0
+displayName: Java method
+description: A method or constructor, identified by repository, declaring type and erased signature.
+category: technical
+properties:
+  repository: { type: string, required: true }
+  fqcn: { type: string, required: true }
+  signature: { type: string, required: true, description: "Erased signature, e.g. transfer(String,BigDecimal)" }
+  summary: { type: text }
+  lineStart: { type: integer }
+  lineEnd: { type: integer }
+identity:
+  strategy: naturalKey
+  naturalKey: [repository, fqcn, signature]
+embedding:
+  indexFields: [summary]
+retrieval:
+  displayProperty: signature

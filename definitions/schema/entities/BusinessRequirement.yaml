@@ -1,0 +1,21 @@
+kind: EntityType
+name: BusinessRequirement
+version: 1.0.0
+displayName: Business requirement
+description: A requirement stated in a business document (BRD, change request), identified by its document and requirement id.
+category: business
+properties:
+  documentId: { type: string, required: true, description: Logical id of the source document }
+  requirementId: { type: string, required: true, description: "Id used in the document, e.g. FR-12" }
+  title: { type: string, required: true }
+  text: { type: text, description: The requirement as written }
+  priority: { type: string, enum: [must, should, could, wont] }
+  status: { type: string, enum: [draft, approved, implemented, retired] }
+identity:
+  strategy: naturalKey
+  naturalKey: [documentId, requirementId]
+embedding:
+  indexFields: [text]
+retrieval:
+  displayProperty: title
+  searchFields: [title, text]

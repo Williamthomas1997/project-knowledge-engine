@@ -1,0 +1,16 @@
+kind: EntityType
+name: TestCase
+version: 1.0.0
+displayName: Test case
+description: An automated test method.
+category: verification
+properties:
+  repository: { type: string, required: true }
+  fqcn: { type: string, required: true }
+  methodName: { type: string, required: true }
+  framework: { type: string }
+identity:
+  strategy: naturalKey
+  naturalKey: [repository, fqcn, methodName]
+retrieval:
+  displayProperty: methodName

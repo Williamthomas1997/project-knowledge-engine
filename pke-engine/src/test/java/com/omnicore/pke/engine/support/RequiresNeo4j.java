@@ -1,6 +1,7 @@
 package com.omnicore.pke.engine.support;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * <em>skipped</em> with the reason, never as passed. When one is available its data is wiped first.
  */
 @Target(ElementType.TYPE)
+@Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(RequiresNeo4j.Condition.class)
 public @interface RequiresNeo4j {

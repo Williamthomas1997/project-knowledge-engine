@@ -1,0 +1,15 @@
+kind: EntityType
+name: Service
+version: 1.0.0
+displayName: Service
+description: A deployable application or microservice, identified by its service name.
+category: technical
+properties:
+  serviceName: { type: string, required: true }
+  repository: { type: string, description: Repository the service is built from }
+  description: { type: text }
+identity:
+  strategy: naturalKey
+  naturalKey: [serviceName]
+retrieval:
+  displayProperty: serviceName

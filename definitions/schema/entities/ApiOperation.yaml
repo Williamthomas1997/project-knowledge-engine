@@ -1,0 +1,19 @@
+kind: EntityType
+name: ApiOperation
+version: 1.0.0
+displayName: API operation
+description: One HTTP operation of a service. Gateway headers and field structure are added in M2 (ARCHITECT-HANDOFF item 9).
+category: technical
+properties:
+  service: { type: string, required: true }
+  httpMethod: { type: string, required: true, enum: [GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS] }
+  pathTemplate: { type: string, required: true, pattern: "^/.*" }
+  operationId: { type: string }
+  summary: { type: text }
+identity:
+  strategy: naturalKey
+  naturalKey: [service, httpMethod, pathTemplate]
+embedding:
+  indexFields: [summary]
+retrieval:
+  displayProperty: pathTemplate

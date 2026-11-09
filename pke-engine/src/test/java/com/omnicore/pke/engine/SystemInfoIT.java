@@ -2,32 +2,17 @@ package com.omnicore.pke.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.omnicore.pke.engine.support.Neo4jTestDatabase;
-import com.omnicore.pke.engine.support.RequiresNeo4j;
+import com.omnicore.pke.engine.support.KnowledgeIT;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /** Boots the full application without any AI provider key and calls the system info endpoint over HTTP. */
-@RequiresNeo4j
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class SystemInfoIT {
-
-    @DynamicPropertySource
-    static void neo4j(DynamicPropertyRegistry registry) {
-        Neo4jTestDatabase.registerSpringProperties(registry);
-    }
-
-    @LocalServerPort
-    int port;
+class SystemInfoIT extends KnowledgeIT {
 
     @Test
     void systemInfoReportsNeo4jAndNoModelsWithoutOpenAiKey() throws Exception {

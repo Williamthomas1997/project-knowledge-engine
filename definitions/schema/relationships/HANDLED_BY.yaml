@@ -1,0 +1,10 @@
+kind: RelationshipType
+name: HANDLED_BY
+version: 1.0.0
+description: The API operation is handled by this Java method (controller or route resolution).
+category: technical
+sourceTypes: [ApiOperation]
+targetTypes: [JavaMethod]
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.9 }

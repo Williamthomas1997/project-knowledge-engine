@@ -1,0 +1,11 @@
+kind: RelationshipType
+name: DEPENDS_ON_FEATURE
+version: 1.0.0
+description: One business feature depends on another in business terms, not because they share code.
+category: business
+sourceTypes: [BusinessFeature]
+targetTypes: [BusinessFeature]
+properties:
+  rationale: { type: text }
+evidence: { required: true }
+policy: { discovery: [ai, manual], approval: inferred }

@@ -1,0 +1,9 @@
+kind: RelationshipType
+name: EXPOSES_API
+version: 1.0.0
+description: The service exposes the API operation.
+category: technical
+sourceTypes: [Service]
+targetTypes: [ApiOperation]
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: out, weight: 0.7 }
