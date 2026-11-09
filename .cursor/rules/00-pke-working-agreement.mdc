@@ -1,0 +1,20 @@
+---
+description: Project Knowledge Engine working agreement
+alwaysApply: true
+---
+- Follow the architecture in `docs/IMPLEMENTATION_PLAN.md`. If you must deviate, implement the closest
+  compliant option and record the deviation and its reason in the milestone report. Never deviate silently.
+- Do only what the current milestone asks for. Don't start later milestones.
+- Write files only inside this project folder. Never touch the other repos under `BitBucket`.
+- No secrets in files, logs or commits. Use the env vars `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` and
+  `OPENAI_API_KEY`. Keep `.env.example` with placeholder values only.
+- The app and every test must run without `OPENAI_API_KEY`.
+- No placeholder implementations or mocked core behaviour described as done. If something is unfinished,
+  say so in the report.
+- Before you finish, run `mvn clean verify` from the project root and fix failures. Report the real results:
+  paste the Maven summary lines and the surefire/failsafe counts. Never claim a test passed if it didn't run.
+- Cypher: never concatenate labels, relationship types or property names into query strings. Use parameters
+  and Cypher dynamic labels/types `$(...)`, and validate identifiers against `^[A-Z][A-Za-z0-9]{1,63}$`
+  (labels) or `^[A-Z][A-Z0-9_]{1,63}$` (relationship types).
+- Commit to the local git repo at the end of each milestone, with the message `M<n>: <summary>`. Never push.
+- Always finish by writing `docs/reports/<milestone>-REPORT.md` (same sections as `docs/reports/M0-REPORT.md`).

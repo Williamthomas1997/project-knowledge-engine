@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: project-knowledge-engine
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD:}
+  data:
+    neo4j:
+      database: ${NEO4J_DATABASE:neo4j}
+  ai:
+    # Every model type is off by default so the engine starts without any provider key.
+    # The 'openai' profile switches chat and embeddings on (application-openai.yml).
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    description: AI-powered project knowledge engine

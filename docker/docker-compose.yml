@@ -1,0 +1,25 @@
+# Local Neo4j for development. Same image tag as the integration tests (pom.xml: neo4j.test.image).
+#   docker compose -f docker/docker-compose.yml --env-file .env up -d
+services:
+  neo4j:
+    image: neo4j:2026.10.1-community
+    container_name: pke-neo4j
+    ports:
+      - "7474:7474"   # browser
+      - "7687:7687"   # bolt
+    environment:
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env (at least 8 characters)}"
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 512M
+    volumes:
+      - pke-neo4j-data:/data
+      - pke-neo4j-logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pke-neo4j-data:
+  pke-neo4j-logs:
