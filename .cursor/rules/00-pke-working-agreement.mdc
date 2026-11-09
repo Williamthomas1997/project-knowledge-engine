@@ -16,5 +16,7 @@ alwaysApply: true
 - Cypher: never concatenate labels, relationship types or property names into query strings. Use parameters
   and Cypher dynamic labels/types `$(...)`, and validate identifiers against `^[A-Z][A-Za-z0-9]{1,63}$`
   (labels) or `^[A-Z][A-Z0-9_]{1,63}$` (relationship types).
-- Commit to the local git repo at the end of each milestone, with the message `M<n>: <summary>`. Never push.
+- Commit at the end of each milestone as `William Thomas <pkwilliamthomas@gmail.com>` (repo-local identity, never the
+  company one), message `M<n>: <summary>`. Push to GitHub `origin` (main) only when the milestone is complete and
+  `mvn clean verify` is green. Never push to Bitbucket.
 - Always finish by writing `docs/reports/<milestone>-REPORT.md` (same sections as `docs/reports/M0-REPORT.md`).
