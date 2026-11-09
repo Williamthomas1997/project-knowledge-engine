@@ -157,7 +157,7 @@ probes should wait for `/actuator/health/readiness` or for `GET /api/pipelines` 
 ## 9. Git
 
 Committed locally as `M3: AI layer, skills and pipelines runtime, knowledge cards` by William Thomas
-<pkwilliamthomas@gmail.com>; push status in the commit summary to William.
+<pkwilliamthomas@gmail.com> (`938360b`) and pushed to `origin` main.
 
 ## Next milestone
 
