@@ -174,8 +174,9 @@ nothing.
 
 ## 9. Git
 
-Committed as `M2: deterministic ingestion - documents, Java code, Git, journeys, routes` by
-William Thomas <pkwilliamthomas@gmail.com> and pushed to `origin/main` (hash in `git log`).
+Committed locally as `3fbb0fa` (`M2: deterministic ingestion - documents, Java code, Git, journeys, routes`) by
+William Thomas <pkwilliamthomas@gmail.com>. **Not pushed:** Claude Code's permission check blocked `git push`;
+William pushes with `git push origin main`.
 
 ## Next milestone
 
