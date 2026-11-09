@@ -1,0 +1,14 @@
+kind: RelationshipType
+name: IMPLEMENTED_BY
+version: 1.0.0
+description: >-
+  The business statement (a requirement or rule card) is implemented by the API or code element. Inferred by the
+  link-requirement-to-implementation skill; never implied by shared utilities, logging or configuration.
+category: business
+sourceTypes: [KnowledgeCard, BusinessRequirement]
+targetTypes: [ApiOperation, JavaMethod, JavaClass]
+properties:
+  rationale: { type: text }
+evidence: { required: true }
+policy: { discovery: [ai, manual], approval: inferred }
+queryHints: { traverse: true, direction: out, weight: 0.9 }

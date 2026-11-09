@@ -1,0 +1,48 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "b655c4fde88f6a4c9c54c6ceaea2f87a1f30b3e90f469273e077d7ee6790705b",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1073,
+  "tokensOut": 88,
+  "input": {
+    "document": {
+      "key": "doc:international-transfer-brd",
+      "title": "International Transfer - Business Requirements (synthetic demo)"
+    },
+    "section": {
+      "heading": "4 Error codes",
+      "text": "| Code | Meaning |\n| --- | --- |\n| 003040 | Beneficiary currency not supported |\n| 003041 | Daily limit exceeded |",
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "4 Error codes"
+      ]
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "Error 003040 means the beneficiary currency is not supported.",
+        "kind": "definition",
+        "keyTerms": [
+          "003040",
+          "error code",
+          "beneficiary currency"
+        ],
+        "requirementId": null
+      },
+      {
+        "text": "Error 003041 means the daily limit is exceeded.",
+        "kind": "definition",
+        "keyTerms": [
+          "003041",
+          "error code",
+          "daily limit"
+        ],
+        "requirementId": null
+      }
+    ]
+  }
+}

@@ -9,6 +9,8 @@ public final class ChangeEventTypes {
     public static final String ENTITY_CREATED = "ENTITY_CREATED";
     public static final String ENTITY_UPDATED = "ENTITY_UPDATED";
     public static final String ENTITY_RENAMED = "ENTITY_RENAMED";
+    public static final String ENTITY_INVALIDATED = "ENTITY_INVALIDATED";
+    public static final String ENTITY_REVALIDATED = "ENTITY_REVALIDATED";
     public static final String EVIDENCE_ADDED = "EVIDENCE_ADDED";
     public static final String RELATIONSHIP_CREATED = "RELATIONSHIP_CREATED";
     public static final String RELATIONSHIP_UPDATED = "RELATIONSHIP_UPDATED";

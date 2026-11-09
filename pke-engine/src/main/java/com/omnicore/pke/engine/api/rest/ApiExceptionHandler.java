@@ -4,6 +4,7 @@ import com.omnicore.pke.engine.kernel.ConflictException;
 import com.omnicore.pke.engine.kernel.InvalidIdentifierException;
 import com.omnicore.pke.engine.kernel.NotFoundException;
 import com.omnicore.pke.engine.kernel.ValidationFailedException;
+import com.omnicore.pke.spi.pipeline.StepFailure;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,17 @@ class ApiExceptionHandler {
     ProblemDetail conflict(ConflictException e) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
         problem.setTitle("Conflict");
+        return problem;
+    }
+
+    /** A skill run from the API failed: TRANSIENT = 503 (retry later), otherwise 422 (the input or answer is wrong). */
+    @ExceptionHandler(StepFailure.class)
+    ProblemDetail stepFailure(StepFailure e) {
+        HttpStatus status = e.errorClass() == StepFailure.ErrorClass.TRANSIENT
+                ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.UNPROCESSABLE_CONTENT;
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, e.getMessage());
+        problem.setTitle("Skill failed");
+        problem.setProperty("errorClass", e.errorClass().name());
         return problem;
     }
 

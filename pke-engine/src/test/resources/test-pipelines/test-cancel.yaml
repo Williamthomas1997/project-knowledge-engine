@@ -1,0 +1,12 @@
+kind: Pipeline
+id: test-cancel
+version: 1.0.0
+description: Executor cancellation test (a long step that checks for cancellation).
+input:
+  type: object
+steps:
+  - id: work
+    uses: test-work
+    timeout: PT30S
+  - id: last
+    uses: test-echo

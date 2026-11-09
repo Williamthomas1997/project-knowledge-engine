@@ -1,0 +1,158 @@
+{
+  "skill": "reconcile-knowledge",
+  "skillVersion": "1.0.0",
+  "inputHash": "3e44ce80f46942cdc3cdcce8bb67488e70d1d4d775eb27ba173a6a469319de01",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1847,
+  "tokensOut": 109,
+  "input": {
+    "document": {
+      "key": "doc:international-transfer-brd"
+    },
+    "section": {
+      "heading": "FR-2 Transfer limit",
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "3 Requirements",
+        "FR-2 Transfer limit"
+      ]
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
+        "kind": "rule",
+        "keyTerms": [
+          "daily limit",
+          "transfer limit",
+          "amount in QAR",
+          "003041",
+          "FR-2"
+        ],
+        "requirementId": "FR-2"
+      },
+      {
+        "ref": "C2",
+        "text": "The daily limit for international transfers is QAR 30,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "daily limit",
+          "international transfer",
+          "QAR 30,000",
+          "FR-2"
+        ],
+        "requirementId": "FR-2"
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
+        "kind": "rule",
+        "requirementId": "FR-2",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E2",
+        "text": "The daily limit for international transfers is QAR 50,000.",
+        "kind": "constraint",
+        "requirementId": "FR-2",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E3",
+        "text": "The daily limit for international transfers is the same as the daily limit for local transfers.",
+        "kind": "rule",
+        "requirementId": "FR-2",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E4",
+        "text": "Error 003041 means the daily limit is exceeded.",
+        "kind": "definition",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E5",
+        "text": "An international transfer is rejected with error 003040 when the beneficiary currency is not supported for the destination country.",
+        "kind": "rule",
+        "requirementId": "FR-1",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E6",
+        "text": "After a successful validation and OTP check, the system executes the international transfer, stores it and publishes a transfer-executed event.",
+        "kind": "requirement",
+        "requirementId": "FR-3",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E7",
+        "text": "Error 003040 means the beneficiary currency is not supported.",
+        "kind": "definition",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E8",
+        "text": "An international transfer is validated, confirmed with an OTP and then executed.",
+        "kind": "rule",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E9",
+        "text": "International transfers are made from a QAR current account to a saved beneficiary.",
+        "kind": "constraint",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      },
+      {
+        "ref": "E10",
+        "text": "Customers send money to beneficiaries abroad from the mobile app with an international transfer.",
+        "kind": "definition",
+        "documentKey": "doc:international-transfer-brd",
+        "sameSection": false,
+        "humanVerified": false
+      }
+    ]
+  },
+  "response": {
+    "decisions": [
+      {
+        "decision": "NOOP",
+        "candidate": "C1",
+        "target": "E1",
+        "reason": "The FR-2 rejection rule is unchanged."
+      },
+      {
+        "decision": "UPDATE",
+        "candidate": "C2",
+        "target": "E2",
+        "reason": "Same FR-2 daily limit; the value changed from QAR 50,000 to QAR 30,000."
+      },
+      {
+        "decision": "INVALIDATE",
+        "target": "E3",
+        "reason": "FR-2 no longer says the limit equals the local transfer limit; with QAR 30,000 the statement is no longer stated."
+      }
+    ]
+  }
+}

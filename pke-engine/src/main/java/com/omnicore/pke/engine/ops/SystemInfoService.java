@@ -32,6 +32,7 @@ public class SystemInfoService {
                 server.edition(),
                 List.of(environment.getActiveProfiles()),
                 models.chatModelConfigured(),
+                models.chatModel(),
                 models.embeddingModelConfigured());
     }
 }

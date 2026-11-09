@@ -1,0 +1,19 @@
+kind: Pipeline
+id: test-steps
+version: 1.0.0
+description: Executor tests (timeouts, retries, cancellation, resume, idempotency).
+input:
+  type: object
+  properties:
+    mode: { enum: [ok, sleep, cancellable, transient-once, permanent] }
+    sleepMs: { type: integer }
+    run: { type: string }
+steps:
+  - id: first
+    uses: test-echo
+  - id: work
+    uses: test-work
+    timeout: PT1S
+    retry: { maxAttempts: 2, backoff: PT0.1S }
+  - id: last
+    uses: test-echo

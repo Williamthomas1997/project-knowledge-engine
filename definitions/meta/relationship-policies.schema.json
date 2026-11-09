@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/relationship-policies.schema.json",
+  "title": "PKE relationship policies",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "rules"],
+  "properties": {
+    "kind": { "const": "RelationshipPolicies" },
+    "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
+    "description": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relationship", "origin", "decision"],
+        "properties": {
+          "relationship": { "type": "string", "pattern": "^(\\*|[A-Z][A-Z0-9_]{1,63})$" },
+          "origin": { "enum": ["deterministic", "ai", "manual"] },
+          "decision": { "enum": ["AUTO_ACCEPT", "ACCEPT_AS_INFERRED", "QUESTION", "REJECT"] },
+          "evidenceRequired": { "type": "boolean" },
+          "minConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decision": { "const": "QUESTION" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

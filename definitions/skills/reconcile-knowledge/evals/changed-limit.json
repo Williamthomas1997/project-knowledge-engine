@@ -1,0 +1,94 @@
+{
+  "name": "A changed value in the same requirement is an UPDATE; a statement that depended on it is invalidated",
+  "input": {
+    "document": {
+      "key": "doc:cards-brd"
+    },
+    "section": {
+      "headingPath": [
+        "Cards - Business Requirements (synthetic eval)",
+        "3 Requirements",
+        "FR-5 Card withdrawal limit"
+      ],
+      "heading": "FR-5 Card withdrawal limit"
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 8,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "ATM withdrawal limit",
+          "debit card",
+          "FR-5"
+        ],
+        "requirementId": "FR-5"
+      },
+      {
+        "ref": "C2",
+        "text": "An ATM withdrawal is rejected with error 006001 when it exceeds the daily ATM withdrawal limit.",
+        "kind": "rule",
+        "keyTerms": [
+          "ATM withdrawal",
+          "006001",
+          "FR-5"
+        ],
+        "requirementId": "FR-5"
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 5,000.",
+        "kind": "constraint",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E2",
+        "text": "The daily ATM withdrawal limit for debit cards equals the daily limit for card purchases.",
+        "kind": "rule",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E3",
+        "text": "An ATM withdrawal is rejected with error 006001 when it exceeds the daily ATM withdrawal limit.",
+        "kind": "rule",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/decisions",
+      "someItem": {
+        "decision": "UPDATE",
+        "candidate": "C1",
+        "target": "E1"
+      }
+    },
+    {
+      "pointer": "/decisions",
+      "someItem": {
+        "decision": "NOOP",
+        "candidate": "C2",
+        "target": "E3"
+      }
+    },
+    {
+      "pointer": "/decisions",
+      "someItem": {
+        "decision": "INVALIDATE",
+        "target": "E2"
+      }
+    }
+  ]
+}

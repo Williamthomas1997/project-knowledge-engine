@@ -1,0 +1,40 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "30fa7ae9a27b579948434e9dd46b05b61af27ce11ed202c30428c709d0404482",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1072,
+  "tokensOut": 53,
+  "input": {
+    "document": {
+      "key": "doc:international-transfer-brd",
+      "title": "International Transfer - Business Requirements (synthetic demo)"
+    },
+    "section": {
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "3 Requirements",
+        "FR-4 Purpose of transfer"
+      ],
+      "heading": "FR-4 Purpose of transfer",
+      "text": "The system shall require a purpose code for every international transfer."
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "Every international transfer requires a purpose code.",
+        "kind": "requirement",
+        "keyTerms": [
+          "purpose code",
+          "purpose of transfer",
+          "international transfer",
+          "FR-4"
+        ],
+        "requirementId": "FR-4"
+      }
+    ]
+  }
+}

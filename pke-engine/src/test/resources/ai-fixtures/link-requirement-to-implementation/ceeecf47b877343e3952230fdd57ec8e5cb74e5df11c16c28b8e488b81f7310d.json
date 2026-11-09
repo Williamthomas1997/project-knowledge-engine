@@ -1,0 +1,107 @@
+{
+  "skill": "link-requirement-to-implementation",
+  "skillVersion": "1.0.0",
+  "inputHash": "ceeecf47b877343e3952230fdd57ec8e5cb74e5df11c16c28b8e488b81f7310d",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1191,
+  "tokensOut": 37,
+  "input": {
+    "requirement": {
+      "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
+      "kind": "rule",
+      "requirementId": "FR-2",
+      "keyTerms": [
+        "daily limit",
+        "transfer limit",
+        "amount in QAR",
+        "003041",
+        "FR-2"
+      ]
+    },
+    "candidates": [
+      {
+        "detail": "com.demo.transfer.TransferService; throws 003041",
+        "type": "JavaMethod",
+        "ref": "I1",
+        "label": "TransferService#validate(TransferRequest)"
+      },
+      {
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)",
+        "type": "ApiOperation",
+        "ref": "I2",
+        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)"
+      },
+      {
+        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)",
+        "type": "ApiOperation",
+        "ref": "I3",
+        "label": "POST /api/v3/international-transfers/execute (service, transfer-service)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferController",
+        "type": "JavaMethod",
+        "ref": "I4",
+        "label": "TransferController#TransferController(TransferService)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferController",
+        "type": "JavaMethod",
+        "ref": "I5",
+        "label": "TransferController#execute(ExecuteRequest)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferController",
+        "type": "JavaMethod",
+        "ref": "I6",
+        "label": "TransferController#ftAccounts(AccountsRequest)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferController",
+        "type": "JavaMethod",
+        "ref": "I7",
+        "label": "TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferEventPublisher",
+        "type": "JavaMethod",
+        "ref": "I8",
+        "label": "TransferEventPublisher#TransferEventPublisher(KafkaTemplate)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferEventPublisher",
+        "type": "JavaMethod",
+        "ref": "I9",
+        "label": "TransferEventPublisher#publishExecuted(String)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferService",
+        "type": "JavaMethod",
+        "ref": "I10",
+        "label": "TransferService#accounts(AccountsRequest)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferService",
+        "type": "JavaMethod",
+        "ref": "I11",
+        "label": "TransferService#execute(ExecuteRequest)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferService; throws 003040",
+        "type": "JavaMethod",
+        "ref": "I12",
+        "label": "TransferService#validateCurrency(String)"
+      }
+    ]
+  },
+  "response": {
+    "links": [
+      {
+        "candidate": "I1",
+        "rationale": "Converts the amount to QAR and throws 003041 when it exceeds the maximum amount.",
+        "confidence": 0.85
+      }
+    ]
+  }
+}

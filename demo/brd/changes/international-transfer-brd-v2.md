@@ -21,7 +21,7 @@ destination country. The customer sees error 003040.
 ### FR-2 Transfer limit
 
 The system shall reject a transfer whose amount, converted to QAR, exceeds the customer's daily limit.
-The customer sees error 003041.
+The customer sees error 003041. The daily limit for international transfers is QAR 30,000.
 
 ### FR-4 Purpose of transfer
 

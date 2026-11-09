@@ -145,4 +145,28 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- mvn -Precord-ai verify (OPENAI_API_KEY set): integration tests call the real model for every request
+             without a fixture and save the answer under src/test/resources/ai-fixtures. Synthetic data only. -->
+        <profile>
+            <id>record-ai</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <pke.ai.mode>record</pke.ai.mode>
+                                <pke.ai.record.dir>${project.basedir}/src/test/resources/ai-fixtures</pke.ai.record.dir>
+                                <spring.ai.model.chat>openai</spring.ai.model.chat>
+                                <spring.ai.openai.api-key>${env.OPENAI_API_KEY}</spring.ai.openai.api-key>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

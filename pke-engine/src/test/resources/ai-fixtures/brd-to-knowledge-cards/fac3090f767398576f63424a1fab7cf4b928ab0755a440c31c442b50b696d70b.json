@@ -1,0 +1,26 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "fac3090f767398576f63424a1fab7cf4b928ab0755a440c31c442b50b696d70b",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1076,
+  "tokensOut": 3,
+  "input": {
+    "document": {
+      "key": "doc:international-transfer-brd",
+      "title": "International Transfer - Business Requirements (synthetic demo)"
+    },
+    "section": {
+      "heading": "International Transfer - Business Requirements (synthetic demo)",
+      "text": "Document id: BRD-INTL-TRANSFER. Version 1.0. This document is synthetic and contains no bank data.",
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)"
+      ]
+    }
+  },
+  "response": {
+    "cards": []
+  }
+}

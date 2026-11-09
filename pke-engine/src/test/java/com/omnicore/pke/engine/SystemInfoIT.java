@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 class SystemInfoIT extends KnowledgeIT {
 
     @Test
-    void systemInfoReportsNeo4jAndNoModelsWithoutOpenAiKey() throws Exception {
+    void systemInfoReportsNeo4jAndTheReplayModelWithoutOpenAiKey() throws Exception {
         HttpResponse<String> response = HttpClient.newHttpClient().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/system/info")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -25,7 +25,9 @@ class SystemInfoIT extends KnowledgeIT {
         assertThat(body.get("neo4jVersion").asString()).isNotBlank();
         assertThat(body.get("neo4jEdition").asString()).isNotBlank();
         assertThat(body.get("appVersion").asString()).isEqualTo("0.1.0-SNAPSHOT");
-        assertThat(body.get("chatModelConfigured").asBoolean()).isFalse();
+        // integration tests replay recorded answers; no provider model is configured
+        assertThat(body.get("chatModelConfigured").asBoolean()).isTrue();
+        assertThat(body.get("chatModel").asString()).isEqualTo("replay");
         assertThat(body.get("embeddingModelConfigured").asBoolean()).isFalse();
     }
 

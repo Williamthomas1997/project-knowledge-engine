@@ -250,6 +250,11 @@ Maven profile and as `POST /api/eval/runs`.
 
 ## 9. Skills, pipelines, policies
 
+Implemented in M3 as described in ADR-013 (which refines the bullets below): skills are Claude-compatible
+`SKILL.md` files run by `SkillRunner` through the provider-neutral `ChatPort`; tools are called by steps on the
+skill's behalf (declared tools only); policies are `AUTO_ACCEPT | ACCEPT_AS_INFERRED | QUESTION | REJECT`, with
+`QUESTION` replacing `REVIEW` (conflicts become `:OpenQuestion`s, ADR-007 §4).
+
 - **Skill** = Markdown + YAML front matter (id, version, inputSchema, outputSchema, tools,
   applicable types, eval cases). Executed by `SkillRunner` through Spring AI `ChatClient`
   with structured output; output validated against `outputSchema` before becoming
@@ -335,8 +340,8 @@ Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-P
 | **M0** | Build skeleton, verified versions, Neo4j compose + Testcontainers, ArchUnit | done |
 | **M1** | Foundation: schema registry, single graph writer, history in one transaction, REST | done |
 | **M2** | Deterministic ingestion: documents, Java code, Git, journeys (Postman / Java tests / Gatling / JMeter), routes, demo corpus | done |
-| **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | next |
-| **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | |
+| **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | done (ADR-013) |
+| **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | next |
 | **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | |
 | **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | |
 | **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |

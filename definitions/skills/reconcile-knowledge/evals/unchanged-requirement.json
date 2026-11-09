@@ -1,0 +1,54 @@
+{
+  "name": "The same statement in other words is a NOOP",
+  "input": {
+    "document": {
+      "key": "doc:cards-brd"
+    },
+    "section": {
+      "headingPath": [
+        "Cards - Business Requirements (synthetic eval)",
+        "3 Requirements",
+        "FR-5 Card withdrawal limit"
+      ],
+      "heading": "FR-5 Card withdrawal limit"
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "Debit card ATM withdrawals above the daily ATM withdrawal limit are rejected with error 006001.",
+        "kind": "rule",
+        "keyTerms": [
+          "ATM withdrawal",
+          "006001"
+        ],
+        "requirementId": "FR-5"
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "An ATM withdrawal is rejected with error 006001 when it exceeds the daily ATM withdrawal limit.",
+        "kind": "rule",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/decisions",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "pointer": "/decisions",
+      "someItem": {
+        "decision": "NOOP",
+        "candidate": "C1",
+        "target": "E1"
+      }
+    }
+  ]
+}

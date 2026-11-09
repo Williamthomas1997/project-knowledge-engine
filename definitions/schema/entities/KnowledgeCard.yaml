@@ -1,0 +1,21 @@
+kind: EntityType
+name: KnowledgeCard
+version: 1.0.0
+displayName: Knowledge card
+description: >-
+  One atomic, self-contained statement rewritten by the brd-to-knowledge-cards skill from a document section
+  (ADR-007 section 4). Cards, not raw sections, are what retrieval embeds. Superseded cards are invalidated, never deleted.
+category: business
+properties:
+  text: { type: text, required: true, description: "The statement, understandable without the source section" }
+  kind: { type: string, required: true, enum: [requirement, rule, constraint, definition, exception] }
+  keyTerms: { type: string-list, description: Domain terms for keyword search and linking }
+  requirementId: { type: string, description: "Requirement id stated in the source, e.g. FR-2" }
+  documentKey: { type: string, required: true, description: "Source document key, doc:<slug>" }
+identity: { strategy: explicit }
+evidence: { required: true }
+embedding:
+  indexFields: [text]
+retrieval:
+  displayProperty: text
+  searchFields: [text, keyTerms]

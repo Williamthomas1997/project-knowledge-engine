@@ -8,5 +8,6 @@ public record SystemInfo(
         String neo4jEdition,
         List<String> activeProfiles,
         boolean chatModelConfigured,
+        String chatModel,
         boolean embeddingModelConfigured) {
 }

@@ -1,0 +1,48 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "e26d4d653f2de31a4c6bd6774602fd869fded53d8aaa68df6797c6b867e84597",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1070,
+  "tokensOut": 94,
+  "input": {
+    "document": {
+      "key": "doc:standing-orders-brd",
+      "title": "Standing Orders - Business Requirements (synthetic eval)"
+    },
+    "section": {
+      "headingPath": [
+        "Standing Orders - Business Requirements (synthetic eval)",
+        "4 Error codes"
+      ],
+      "heading": "4 Error codes",
+      "text": "| Code | Meaning |\n| --- | --- |\n| 005010 | Standing order amount too high |\n| 005011 | Standing order end date in the past |"
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "Error 005010 means the standing order amount is too high.",
+        "kind": "definition",
+        "keyTerms": [
+          "005010",
+          "error code",
+          "standing order amount"
+        ],
+        "requirementId": null
+      },
+      {
+        "text": "Error 005011 means the standing order end date is in the past.",
+        "kind": "definition",
+        "keyTerms": [
+          "005011",
+          "error code",
+          "standing order end date"
+        ],
+        "requirementId": null
+      }
+    ]
+  }
+}

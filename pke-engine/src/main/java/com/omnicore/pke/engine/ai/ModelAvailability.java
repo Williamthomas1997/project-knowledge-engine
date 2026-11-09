@@ -1,8 +1,5 @@
 package com.omnicore.pke.engine.ai;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,19 +9,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class ModelAvailability {
 
-    private final ObjectProvider<ChatModel> chatModel;
-    private final ObjectProvider<EmbeddingModel> embeddingModel;
+    private final ChatPort chat;
+    private final EmbeddingPort embeddings;
 
-    public ModelAvailability(ObjectProvider<ChatModel> chatModel, ObjectProvider<EmbeddingModel> embeddingModel) {
-        this.chatModel = chatModel;
-        this.embeddingModel = embeddingModel;
+    public ModelAvailability(ChatPort chat, EmbeddingPort embeddings) {
+        this.chat = chat;
+        this.embeddings = embeddings;
     }
 
     public boolean chatModelConfigured() {
-        return chatModel.getIfAvailable() != null;
+        return chat.available();
     }
 
     public boolean embeddingModelConfigured() {
-        return embeddingModel.getIfAvailable() != null;
+        return embeddings.available();
+    }
+
+    public String chatModel() {
+        return chat.describe();
     }
 }

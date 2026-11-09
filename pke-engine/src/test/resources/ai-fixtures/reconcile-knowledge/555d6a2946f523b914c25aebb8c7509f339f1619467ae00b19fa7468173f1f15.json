@@ -1,0 +1,97 @@
+{
+  "skill": "reconcile-knowledge",
+  "skillVersion": "1.0.0",
+  "inputHash": "555d6a2946f523b914c25aebb8c7509f339f1619467ae00b19fa7468173f1f15",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1304,
+  "tokensOut": 109,
+  "input": {
+    "document": {
+      "key": "doc:cards-brd"
+    },
+    "section": {
+      "headingPath": [
+        "Cards - Business Requirements (synthetic eval)",
+        "3 Requirements",
+        "FR-5 Card withdrawal limit"
+      ],
+      "heading": "FR-5 Card withdrawal limit"
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 8,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "ATM withdrawal limit",
+          "debit card",
+          "FR-5"
+        ],
+        "requirementId": "FR-5"
+      },
+      {
+        "ref": "C2",
+        "text": "An ATM withdrawal is rejected with error 006001 when it exceeds the daily ATM withdrawal limit.",
+        "kind": "rule",
+        "keyTerms": [
+          "ATM withdrawal",
+          "006001",
+          "FR-5"
+        ],
+        "requirementId": "FR-5"
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 5,000.",
+        "kind": "constraint",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E2",
+        "text": "The daily ATM withdrawal limit for debit cards equals the daily limit for card purchases.",
+        "kind": "rule",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      },
+      {
+        "ref": "E3",
+        "text": "An ATM withdrawal is rejected with error 006001 when it exceeds the daily ATM withdrawal limit.",
+        "kind": "rule",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": true,
+        "humanVerified": false
+      }
+    ]
+  },
+  "response": {
+    "decisions": [
+      {
+        "decision": "UPDATE",
+        "candidate": "C1",
+        "target": "E1",
+        "reason": "Same ATM withdrawal limit; the value changed from QAR 5,000 to QAR 8,000."
+      },
+      {
+        "decision": "NOOP",
+        "candidate": "C2",
+        "target": "E3",
+        "reason": "The rejection rule is unchanged."
+      },
+      {
+        "decision": "INVALIDATE",
+        "target": "E2",
+        "reason": "The new version no longer says the ATM limit equals the card purchase limit, and the changed value makes it untrue."
+      }
+    ]
+  }
+}

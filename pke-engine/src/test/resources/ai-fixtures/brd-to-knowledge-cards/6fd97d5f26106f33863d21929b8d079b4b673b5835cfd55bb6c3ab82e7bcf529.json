@@ -1,0 +1,33 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "6fd97d5f26106f33863d21929b8d079b4b673b5835cfd55bb6c3ab82e7bcf529",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1042,
+  "tokensOut": 15,
+  "input": {
+    "document": {
+      "key": "doc:bad-skill-output",
+      "title": "Bad skill output (test document)"
+    },
+    "section": {
+      "heading": "Rules",
+      "text": "A test rule that the replay fixture answers with a card outside the output schema.",
+      "headingPath": [
+        "Bad skill output (test document)",
+        "Rules"
+      ]
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "short",
+        "kind": "wish",
+        "keyTerms": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/pipeline.schema.json",
+  "title": "PKE pipeline definition",
+  "description": "definitions/pipelines/<id>.yaml. Steps run in order; each step uses a registered PipelineStep bean or a skill (skill:<name>). See ADR-013.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "id", "version", "description", "steps"],
+  "properties": {
+    "kind": { "const": "Pipeline" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$" },
+    "version": { "$ref": "#/$defs/semver" },
+    "description": { "type": "string", "minLength": 1 },
+    "input": { "type": "object", "description": "JSON Schema 2020-12 of the pipeline input" },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Input fields naming sources; the idempotency key is hash(pipeline version, those sources' current versions, other input)",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field"],
+            "properties": {
+              "field": { "type": "string", "minLength": 1 },
+              "prefix": { "type": "string", "description": "Prepended to the field value to form the source key, e.g. repo:" }
+            }
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "uses"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+          "uses": { "type": "string", "pattern": "^(skill:)?[a-z][a-z0-9-]{1,63}$" },
+          "description": { "type": "string" },
+          "forEach": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*\\.[A-Za-z0-9_]+$",
+            "description": "Skill steps only: <stepId>.<field> of an earlier step, a list of {key, input} items; the skill runs once per item"
+          },
+          "with": { "type": "object", "description": "Static parameters passed to the step" },
+          "timeout": { "type": "string", "pattern": "^PT", "description": "ISO-8601 duration per attempt, default PT10M" },
+          "retry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 10 },
+              "backoff": { "type": "string", "pattern": "^PT" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "semver": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" }
+  }
+}

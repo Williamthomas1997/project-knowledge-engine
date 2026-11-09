@@ -1,0 +1,53 @@
+{
+  "name": "A contradiction with another section is a CONFLICT with a question, never a guess",
+  "input": {
+    "document": {
+      "key": "doc:cards-brd"
+    },
+    "section": {
+      "headingPath": [
+        "Cards - Business Requirements (synthetic eval)",
+        "6 Limits overview"
+      ],
+      "heading": "6 Limits overview"
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 10,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "ATM withdrawal limit",
+          "debit card"
+        ]
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 8,000.",
+        "kind": "constraint",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": false,
+        "humanVerified": false
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/decisions",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "pointer": "/decisions",
+      "someItem": {
+        "decision": "CONFLICT",
+        "candidate": "C1",
+        "target": "E1",
+        "question~": "10,000"
+      }
+    }
+  ]
+}

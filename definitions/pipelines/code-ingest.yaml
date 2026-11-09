@@ -1,0 +1,27 @@
+kind: Pipeline
+id: code-ingest
+version: 1.0.0
+description: >-
+  A repository's new commits become code knowledge (the M2 deterministic extractors, journeys and routes), then
+  every current requirement and rule card is linked again; cards whose candidates did not change are skipped.
+input:
+  type: object
+  additionalProperties: false
+  required: [repository]
+  properties:
+    repository: { type: string, description: "Registered repository name (source key repo:<name>)" }
+    mode: { enum: [FULL, INCREMENTAL] }
+idempotency:
+  sources:
+    - field: repository
+      prefix: "repo:"
+steps:
+  - id: ingest
+    uses: repository-ingest
+    timeout: PT60M
+    retry: { maxAttempts: 2, backoff: PT10S }
+  - id: link
+    uses: requirements-link
+    with: { cards: all }
+    timeout: PT30M
+    retry: { maxAttempts: 3, backoff: PT5S }

@@ -1,0 +1,4 @@
+# Replay profile: answers come from recorded fixtures (src/test/resources/ai-fixtures); no key, no network.
+pke:
+  ai:
+    mode: replay

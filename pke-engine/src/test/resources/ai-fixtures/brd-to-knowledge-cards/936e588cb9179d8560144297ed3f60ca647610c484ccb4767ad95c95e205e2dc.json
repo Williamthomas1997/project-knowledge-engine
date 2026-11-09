@@ -1,0 +1,39 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "936e588cb9179d8560144297ed3f60ca647610c484ccb4767ad95c95e205e2dc",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1066,
+  "tokensOut": 53,
+  "input": {
+    "document": {
+      "title": "International Transfer - Business Requirements (synthetic demo)",
+      "key": "doc:international-transfer-brd"
+    },
+    "section": {
+      "text": "| Limit | Value |\n| --- | --- |\n| Daily international transfer limit | QAR 50,000 |",
+      "heading": "5 Limits summary",
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "5 Limits summary"
+      ]
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "The daily limit for international transfers is QAR 50,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "daily limit",
+          "international transfer",
+          "QAR 50,000",
+          "limits summary"
+        ],
+        "requirementId": null
+      }
+    ]
+  }
+}

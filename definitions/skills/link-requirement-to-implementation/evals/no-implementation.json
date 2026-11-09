@@ -1,0 +1,34 @@
+{
+  "name": "No candidate implements the statement: no link",
+  "input": {
+    "requirement": {
+      "text": "A payment requires a purpose code.",
+      "kind": "requirement",
+      "requirementId": "FR-8",
+      "keyTerms": [
+        "purpose code",
+        "payment"
+      ]
+    },
+    "candidates": [
+      {
+        "ref": "I1",
+        "type": "JavaMethod",
+        "label": "PaymentEventPublisher#publishExecuted(String)",
+        "detail": "com.demo.pay.PaymentEventPublisher"
+      },
+      {
+        "ref": "I2",
+        "type": "JavaMethod",
+        "label": "FxRateClient#rate(String,String)",
+        "detail": "com.demo.pay.FxRateClient"
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/links",
+      "maxItems": 0
+    }
+  ]
+}

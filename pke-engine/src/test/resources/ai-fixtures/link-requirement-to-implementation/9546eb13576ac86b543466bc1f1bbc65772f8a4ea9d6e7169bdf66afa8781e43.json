@@ -1,0 +1,99 @@
+{
+  "skill": "link-requirement-to-implementation",
+  "skillVersion": "1.0.0",
+  "inputHash": "9546eb13576ac86b543466bc1f1bbc65772f8a4ea9d6e7169bdf66afa8781e43",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1170,
+  "tokensOut": 3,
+  "input": {
+    "candidates": [
+      {
+        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)",
+        "ref": "I1",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "label": "POST /api/v3/international-transfers/execute (service, transfer-service)",
+        "ref": "I2",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)"
+      },
+      {
+        "label": "TransferController#TransferController(TransferService)",
+        "ref": "I3",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#execute(ExecuteRequest)",
+        "ref": "I4",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#ftAccounts(AccountsRequest)",
+        "ref": "I5",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#validate(TransferRequest,String)",
+        "ref": "I6",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferEventPublisher#TransferEventPublisher(KafkaTemplate)",
+        "ref": "I7",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferEventPublisher"
+      },
+      {
+        "label": "TransferEventPublisher#publishExecuted(String)",
+        "ref": "I8",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferEventPublisher"
+      },
+      {
+        "label": "TransferService#accounts(AccountsRequest)",
+        "ref": "I9",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService"
+      },
+      {
+        "label": "TransferService#execute(ExecuteRequest)",
+        "ref": "I10",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService"
+      },
+      {
+        "label": "TransferService#validate(TransferRequest)",
+        "ref": "I11",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService; throws 003041"
+      },
+      {
+        "label": "TransferService#validateCurrency(String)",
+        "ref": "I12",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService; throws 003040"
+      }
+    ],
+    "requirement": {
+      "text": "An international transfer is validated, confirmed with an OTP and then executed.",
+      "kind": "rule",
+      "keyTerms": [
+        "international transfer",
+        "validation",
+        "OTP",
+        "execution"
+      ]
+    }
+  },
+  "response": {
+    "links": []
+  }
+}

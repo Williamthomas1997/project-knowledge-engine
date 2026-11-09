@@ -1,0 +1,25 @@
+# Relationship policies (ADR-013). The first rule whose relationship (or "*") and origin match decides.
+# Without a matching rule the relationship type's schema policy decides: an origin missing from
+# policy.discovery is rejected; approval auto -> AUTO_ACCEPT, inferred -> ACCEPT_AS_INFERRED, review -> QUESTION.
+kind: RelationshipPolicies
+version: 1.0.0
+description: Which relationships are written automatically, written as inferred, or asked as a question.
+rules:
+  - relationship: IMPLEMENTED_BY
+    origin: ai
+    decision: ACCEPT_AS_INFERRED
+    evidenceRequired: true
+    minConfidence: 0.5
+    description: AI-proposed links from requirements to code are kept as INFERRED_AI with their evidence.
+  - relationship: "*"
+    origin: deterministic
+    decision: AUTO_ACCEPT
+    evidenceRequired: true
+    description: Code-extracted edges are facts of the analysed commit.
+  - relationship: "*"
+    origin: manual
+    decision: AUTO_ACCEPT
+    description: Written by a person through the API.
+conflicts:
+  decision: QUESTION
+  description: A contradiction between knowledge items is never resolved automatically; an OpenQuestion is created.

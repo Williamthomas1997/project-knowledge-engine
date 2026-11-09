@@ -1,0 +1,38 @@
+{
+  "name": "An error code table becomes one definition card per code",
+  "input": {
+    "document": {
+      "key": "doc:standing-orders-brd",
+      "title": "Standing Orders - Business Requirements (synthetic eval)"
+    },
+    "section": {
+      "headingPath": [
+        "Standing Orders - Business Requirements (synthetic eval)",
+        "4 Error codes"
+      ],
+      "heading": "4 Error codes",
+      "text": "| Code | Meaning |\n| --- | --- |\n| 005010 | Standing order amount too high |\n| 005011 | Standing order end date in the past |"
+    }
+  },
+  "expect": [
+    {
+      "pointer": "/cards",
+      "minItems": 2,
+      "maxItems": 2
+    },
+    {
+      "pointer": "/cards",
+      "someItem": {
+        "kind": "definition",
+        "text~": "005010"
+      }
+    },
+    {
+      "pointer": "/cards",
+      "someItem": {
+        "kind": "definition",
+        "text~": "005011"
+      }
+    }
+  ]
+}

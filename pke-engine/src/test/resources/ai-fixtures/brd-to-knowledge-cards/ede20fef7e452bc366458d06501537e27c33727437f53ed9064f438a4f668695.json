@@ -1,0 +1,49 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "ede20fef7e452bc366458d06501537e27c33727437f53ed9064f438a4f668695",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1074,
+  "tokensOut": 110,
+  "input": {
+    "document": {
+      "title": "International Transfer - Business Requirements (synthetic demo)",
+      "key": "doc:international-transfer-brd"
+    },
+    "section": {
+      "text": "Customers send money to beneficiaries abroad from the mobile app. The transfer is validated, confirmed with an\nOTP and executed.",
+      "heading": "1 Purpose",
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "1 Purpose"
+      ]
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "Customers send money to beneficiaries abroad from the mobile app with an international transfer.",
+        "kind": "definition",
+        "keyTerms": [
+          "international transfer",
+          "beneficiary",
+          "mobile app"
+        ],
+        "requirementId": null
+      },
+      {
+        "text": "An international transfer is validated, confirmed with an OTP and then executed.",
+        "kind": "rule",
+        "keyTerms": [
+          "international transfer",
+          "validation",
+          "OTP",
+          "execution"
+        ],
+        "requirementId": null
+      }
+    ]
+  }
+}

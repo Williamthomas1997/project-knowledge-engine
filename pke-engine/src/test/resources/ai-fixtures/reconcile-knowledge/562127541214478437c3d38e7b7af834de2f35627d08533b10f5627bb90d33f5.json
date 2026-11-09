@@ -1,0 +1,55 @@
+{
+  "skill": "reconcile-knowledge",
+  "skillVersion": "1.0.0",
+  "inputHash": "562127541214478437c3d38e7b7af834de2f35627d08533b10f5627bb90d33f5",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1082,
+  "tokensOut": 87,
+  "input": {
+    "document": {
+      "key": "doc:cards-brd"
+    },
+    "section": {
+      "headingPath": [
+        "Cards - Business Requirements (synthetic eval)",
+        "6 Limits overview"
+      ],
+      "heading": "6 Limits overview"
+    },
+    "candidates": [
+      {
+        "ref": "C1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 10,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "ATM withdrawal limit",
+          "debit card"
+        ]
+      }
+    ],
+    "existing": [
+      {
+        "ref": "E1",
+        "text": "The daily ATM withdrawal limit for debit cards is QAR 8,000.",
+        "kind": "constraint",
+        "requirementId": "FR-5",
+        "documentKey": "doc:cards-brd",
+        "sameSection": false,
+        "humanVerified": false
+      }
+    ]
+  },
+  "response": {
+    "decisions": [
+      {
+        "decision": "CONFLICT",
+        "candidate": "C1",
+        "target": "E1",
+        "reason": "The limits overview states QAR 10,000 while FR-5 states QAR 8,000 for the same limit.",
+        "question": "The cards BRD states the daily ATM withdrawal limit for debit cards as QAR 8,000 in FR-5 and as QAR 10,000 in section 6 Limits overview. Which value is correct?"
+      }
+    ]
+  }
+}

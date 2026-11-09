@@ -1,0 +1,31 @@
+{
+  "name": "A list API without errors",
+  "input": {
+    "api": {
+      "httpMethod": "POST",
+      "pathTemplate": "/v1/get-payment-accounts",
+      "layer": "gateway",
+      "service": "gateway",
+      "requestFields": [
+        "customerType"
+      ],
+      "responseFields": [
+        "accounts[].number",
+        "accounts[].currency"
+      ],
+      "journeySteps": [
+        "payment journey step 1"
+      ]
+    }
+  },
+  "expect": [
+    {
+      "pointer": "/summary",
+      "contains": "account"
+    },
+    {
+      "pointer": "/keyTerms",
+      "minItems": 3
+    }
+  ]
+}

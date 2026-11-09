@@ -1,4 +1,4 @@
-# REST API (M2)
+# REST API (M3)
 
 Base URL `http://localhost:8080`. JSON unless stated. Errors are RFC 9457 problem details. Validation errors list
 every problem in `violations: [{path, message}]`.
@@ -7,7 +7,9 @@ every problem in `violations: [{path, message}]`.
 |---|---|
 | 400 | Invalid input (schema, identifiers, values, evidence). Nothing was written |
 | 404 | Entity, relationship or type not found |
-| 409 | Conflict: an immutable schema version, an older version, or a breaking schema change |
+| 409 | Conflict: an immutable schema or skill version, an older version, a breaking schema change, a question already answered, an execution that cannot be resumed or cancelled |
+| 422 | A skill run from the API failed: invalid input or an answer outside the output schema (`errorClass`) |
+| 503 | A skill run failed transiently (rate limit, timeout); retry later |
 
 Optional header `X-PKE-Actor: <name>` is recorded on change events as `api:<name>`. **There is no authentication
 yet (M6).** Do not expose the service beyond localhost.
@@ -90,3 +92,32 @@ returns `UNCHANGED` and writes nothing.
 | `POST /api/ingestion/runs/{id}/retry` | New attempt with the same parameters |
 | `GET /api/journeys` | Journeys with step counts and sources |
 | `GET /api/journeys/{idOrKey}` | Ordered steps with their gateway APIs, handler methods and per-source labels; data flow (`FEEDS`); covering suites |
+
+## Pipelines (M3)
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/pipelines` | Active pipelines (`brd-ingest`, `code-ingest`) with their steps |
+| `POST /api/pipelines/{id}/executions` | Body = pipeline input, e.g. `{"documentKey": "doc:international-transfer-brd"}` or `{"repository": "transfer-service", "mode": "INCREMENTAL"}`. `202`; `?wait=true` runs it first. The same input with unchanged sources returns the existing execution unless `?force=true` |
+| `GET /api/pipelines/executions?pipeline=&status=&limit=` · `GET /api/pipelines/executions/{id}` | Executions with per-step `status` (`PENDING`, `RUNNING`, `RETRYING`, `COMPLETED`, `FAILED`, `CANCELLED`, `SKIPPED_NO_MODEL`), `attempts`, `errorClass` (`TRANSIENT`, `PERMANENT`, `POLICY`, `CANCELLED`) and `outputJson`. Execution status: `PENDING`, `RUNNING`, `COMPLETED`, `PARTIAL` (no model), `FAILED`, `CANCELLED` |
+| `POST /api/pipelines/executions/{id}/resume` | Continues a FAILED, CANCELLED or PARTIAL execution from its first incomplete step (`?wait=true`) |
+| `POST /api/pipelines/executions/{id}/cancel` | Cancels a pending or running execution |
+
+## Questions (M3)
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/questions?status=open\|answered\|all&limit=` | Open questions: conflicts the engine does not resolve (`CARD_CONFLICT`, `LINK_REVIEW`), with `options` and the entities they concern |
+| `GET /api/questions/{id}` | One question with the evidence and sections it cites |
+| `POST /api/questions/{id}/answer` | `{"option": "keep-existing\|use-new\|keep-both", "comment": "..."}` (`accept\|reject` for links). Applied through the writer as `HUMAN_VERIFIED` evidence; the `X-PKE-Actor` is recorded on the change events |
+
+## Skills and model calls (M3)
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/skills` · `GET /api/skills/{name}` | Active skills; one skill with its schemas, instructions and versions |
+| `POST /api/skills/{name}/run` | Runs a skill on an input and returns the validated output and provenance. Writes no knowledge (ledger only). Without a model: `{"skipped": true}` |
+| `GET /api/ai/calls?executionId=&limit=` | Cost ledger: provider, model, skill, tokens, cost estimate, prompt hash, outcome |
+
+`GET /api/entities/{id}` now also returns `status` (`CURRENT`/`INVALID`), `invalidAt` and `invalidationReason`;
+`POST /api/knowledge/changes` accepts `entityInvalidations: [{entityId, reason?, invalidAt?, evidence?}]`.

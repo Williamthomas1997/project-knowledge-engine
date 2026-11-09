@@ -1,0 +1,22 @@
+{
+  "name": "Document metadata gives no cards",
+  "input": {
+    "document": {
+      "key": "doc:standing-orders-brd",
+      "title": "Standing Orders - Business Requirements (synthetic eval)"
+    },
+    "section": {
+      "headingPath": [
+        "Standing Orders - Business Requirements (synthetic eval)"
+      ],
+      "heading": "Standing Orders - Business Requirements (synthetic eval)",
+      "text": "Document id: BRD-STANDING-ORDERS. Version 2.3. Author: business analysis team. This document is synthetic."
+    }
+  },
+  "expect": [
+    {
+      "pointer": "/cards",
+      "maxItems": 0
+    }
+  ]
+}

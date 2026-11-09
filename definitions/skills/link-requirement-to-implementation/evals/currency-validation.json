@@ -1,0 +1,48 @@
+{
+  "name": "The method that throws the stated error code implements the rule; helpers do not",
+  "input": {
+    "requirement": {
+      "text": "A payment is rejected with error 007010 when the payee bank is blocked.",
+      "kind": "rule",
+      "requirementId": "FR-3",
+      "keyTerms": [
+        "payee bank",
+        "blocked bank",
+        "007010"
+      ]
+    },
+    "candidates": [
+      {
+        "ref": "I1",
+        "type": "JavaMethod",
+        "label": "PaymentService#checkPayeeBank(String)",
+        "detail": "com.demo.pay.PaymentService; throws 007010"
+      },
+      {
+        "ref": "I2",
+        "type": "JavaMethod",
+        "label": "BankDirectory#isBlocked(String)",
+        "detail": "com.demo.pay.BankDirectory"
+      },
+      {
+        "ref": "I3",
+        "type": "ApiOperation",
+        "label": "POST /v1/payments/validate (service, payment-service)",
+        "detail": "handled by com.demo.pay.PaymentController#validate(PaymentRequest)"
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/links",
+      "minItems": 1,
+      "maxItems": 2
+    },
+    {
+      "pointer": "/links",
+      "someItem": {
+        "candidate": "I1"
+      }
+    }
+  ]
+}

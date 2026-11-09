@@ -1,0 +1,62 @@
+{
+  "skill": "brd-to-knowledge-cards",
+  "skillVersion": "1.0.0",
+  "inputHash": "be4241816e1f3876bad38eccc7148083431cbb25e4cd530dfbdd2a23173e5535",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1112,
+  "tokensOut": 170,
+  "input": {
+    "document": {
+      "key": "doc:international-transfer-brd",
+      "title": "International Transfer - Business Requirements (synthetic demo)"
+    },
+    "section": {
+      "headingPath": [
+        "International Transfer - Business Requirements (synthetic demo)",
+        "3 Requirements",
+        "FR-2 Transfer limit"
+      ],
+      "heading": "FR-2 Transfer limit",
+      "text": "The system shall reject a transfer whose amount, converted to QAR, exceeds the customer's daily limit.\nThe customer sees error 003041. The daily limit for international transfers is QAR 50,000, the same as the daily limit\nfor local transfers."
+    }
+  },
+  "response": {
+    "cards": [
+      {
+        "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
+        "kind": "rule",
+        "keyTerms": [
+          "daily limit",
+          "transfer limit",
+          "amount in QAR",
+          "003041",
+          "FR-2"
+        ],
+        "requirementId": "FR-2"
+      },
+      {
+        "text": "The daily limit for international transfers is QAR 50,000.",
+        "kind": "constraint",
+        "keyTerms": [
+          "daily limit",
+          "international transfer",
+          "QAR 50,000",
+          "FR-2"
+        ],
+        "requirementId": "FR-2"
+      },
+      {
+        "text": "The daily limit for international transfers is the same as the daily limit for local transfers.",
+        "kind": "rule",
+        "keyTerms": [
+          "daily limit",
+          "local transfer limit",
+          "FR-2"
+        ],
+        "requirementId": "FR-2"
+      }
+    ]
+  }
+}

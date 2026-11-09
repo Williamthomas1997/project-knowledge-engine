@@ -1,0 +1,39 @@
+{
+  "name": "A numbered requirement with a limit and an error code",
+  "input": {
+    "document": {
+      "key": "doc:standing-orders-brd",
+      "title": "Standing Orders - Business Requirements (synthetic eval)"
+    },
+    "section": {
+      "headingPath": [
+        "Standing Orders - Business Requirements (synthetic eval)",
+        "3 Requirements",
+        "FR-9 Standing order amount"
+      ],
+      "heading": "FR-9 Standing order amount",
+      "text": "The system shall reject a standing order whose amount exceeds QAR 10,000 per execution. The customer sees error 005010."
+    }
+  },
+  "expect": [
+    {
+      "pointer": "/cards",
+      "minItems": 1,
+      "maxItems": 3
+    },
+    {
+      "pointer": "/cards",
+      "someItem": {
+        "requirementId": "FR-9",
+        "text~": "005010"
+      }
+    },
+    {
+      "pointer": "/cards",
+      "someItem": {
+        "requirementId": "FR-9",
+        "text~": "QAR 10,000"
+      }
+    }
+  ]
+}

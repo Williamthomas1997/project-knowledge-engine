@@ -19,16 +19,24 @@ public final class KnowledgeChanges {
      *                    relationships evidenced only by such a scope and not written again here are invalidated
      * @param skipMissingEndpoints for extractors: a relationship whose endpoint entity does not exist is reported as
      *                    {@code SKIPPED} instead of failing the change set
+     * @param entityInvalidations entities that stop being current (e.g. a superseded knowledge card); history is kept
      */
     public record ChangeSet(String operationId, List<EntityWrite> entities, List<RelationshipWrite> relationships,
                             List<RelationshipInvalidation> invalidations, List<ScopeRetraction> retractions,
-                            Boolean skipMissingEndpoints) {
+                            Boolean skipMissingEndpoints, List<EntityInvalidation> entityInvalidations) {
         public ChangeSet {
             skipMissingEndpoints = Boolean.TRUE.equals(skipMissingEndpoints);
             entities = entities == null ? List.of() : List.copyOf(entities);
             relationships = relationships == null ? List.of() : List.copyOf(relationships);
             invalidations = invalidations == null ? List.of() : List.copyOf(invalidations);
             retractions = retractions == null ? List.of() : List.copyOf(retractions);
+            entityInvalidations = entityInvalidations == null ? List.of() : List.copyOf(entityInvalidations);
+        }
+
+        public ChangeSet(String operationId, List<EntityWrite> entities, List<RelationshipWrite> relationships,
+                         List<RelationshipInvalidation> invalidations, List<ScopeRetraction> retractions,
+                         Boolean skipMissingEndpoints) {
+            this(operationId, entities, relationships, invalidations, retractions, skipMissingEndpoints, List.of());
         }
 
         public ChangeSet(String operationId, List<EntityWrite> entities, List<RelationshipWrite> relationships,
@@ -41,7 +49,8 @@ public final class KnowledgeChanges {
         }
 
         public boolean isEmpty() {
-            return entities.isEmpty() && relationships.isEmpty() && invalidations.isEmpty() && retractions.isEmpty();
+            return entities.isEmpty() && relationships.isEmpty() && invalidations.isEmpty() && retractions.isEmpty()
+                    && entityInvalidations.isEmpty();
         }
     }
 
@@ -90,6 +99,16 @@ public final class KnowledgeChanges {
     }
 
     /**
+     * Ends the current validity of an entity ({@code pke_status = INVALID}, business {@code invalidAt}). The entity,
+     * its versions and evidence are kept; writing the entity again makes it current again ({@code REVALIDATED}).
+     */
+    public record EntityInvalidation(String entityId, String reason, String invalidAt, List<EvidenceInput> evidence) {
+        public EntityInvalidation {
+            evidence = evidence == null ? List.of() : List.copyOf(evidence);
+        }
+    }
+
+    /**
      * Provenance of one fact (MASTER_SPEC §8). {@code confidence} is model-reported and stored as uncalibrated.
      * {@code epistemic} defaults to the epistemic status of the write it belongs to.
      * <p>
@@ -97,18 +116,29 @@ public final class KnowledgeChanges {
      * Scoped evidence is identified by (subject, artifact, scope, method), so seeing the same fact again at a new
      * commit adds nothing and the first observation is kept. Unscoped evidence is identified by (subject, artifact,
      * version, location, method, content hash).
+     * <p>
+     * {@code promptHash} is the SHA-256 of the exact prompt an AI skill was given. A {@code location} that is the
+     * {@code pke_id} of a document {@code :Section} links the evidence to that section ({@code CITES}).
      */
     public record EvidenceInput(String sourceArtifactId, String sourceVersion, String location, String contentHash,
                                 String extractionMethod, String pipelineVersion, String skillVersion,
                                 String modelProvider, String modelId, String excerpt, String verification,
-                                Double confidence, EpistemicStatus epistemic, String scope) {
+                                Double confidence, EpistemicStatus epistemic, String scope, String promptHash) {
+
+        public EvidenceInput(String sourceArtifactId, String sourceVersion, String location, String contentHash,
+                             String extractionMethod, String pipelineVersion, String skillVersion,
+                             String modelProvider, String modelId, String excerpt, String verification,
+                             Double confidence, EpistemicStatus epistemic, String scope) {
+            this(sourceArtifactId, sourceVersion, location, contentHash, extractionMethod, pipelineVersion, skillVersion,
+                    modelProvider, modelId, excerpt, verification, confidence, epistemic, scope, null);
+        }
 
         public EvidenceInput(String sourceArtifactId, String sourceVersion, String location, String contentHash,
                              String extractionMethod, String pipelineVersion, String skillVersion,
                              String modelProvider, String modelId, String excerpt, String verification,
                              Double confidence, EpistemicStatus epistemic) {
             this(sourceArtifactId, sourceVersion, location, contentHash, extractionMethod, pipelineVersion, skillVersion,
-                    modelProvider, modelId, excerpt, verification, confidence, epistemic, null);
+                    modelProvider, modelId, excerpt, verification, confidence, epistemic, null, null);
         }
 
         /** Scoped deterministic evidence: {@code scope} (usually a file) is re-extracted as a whole. */

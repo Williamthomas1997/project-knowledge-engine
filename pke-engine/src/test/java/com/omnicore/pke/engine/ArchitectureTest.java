@@ -71,6 +71,12 @@ class ArchitectureTest {
             .because("the kernel holds shared value types and must stay at the bottom of the dependency graph");
 
     @ArchTest
+    static final ArchRule onlyTheAiPackageUsesSpringAi = noClasses()
+            .that().resideOutsideOfPackage(ENGINE + ".ai..")
+            .should().dependOnClassesThat().resideInAPackage("org.springframework.ai..")
+            .because("skills and pipelines use the provider-neutral ChatPort/EmbeddingPort (ADR-013)");
+
+    @ArchTest
     static final ArchRule kernelIsFrameworkFree = noClasses()
             .that().resideInAPackage(ENGINE + ".kernel..")
             .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "org.neo4j..", "tools.jackson..")

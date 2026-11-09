@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/skill.schema.json",
+  "title": "PKE skill front matter",
+  "description": "Front matter of definitions/skills/<name>/SKILL.md. name and description follow the Claude skill format, so Claude Code can load the same file; the other keys are read by the engine's SkillRunner (ADR-007 §8, ADR-013).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description", "version", "inputSchema", "outputSchema"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$", "description": "Skill id; must equal the directory name" },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1024, "description": "What the skill does and when to use it" },
+    "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
+    "license": { "type": "string" },
+    "metadata": { "type": "object" },
+    "inputSchema": { "type": "object", "description": "JSON Schema 2020-12 of the input" },
+    "outputSchema": { "type": "object", "description": "JSON Schema 2020-12 the model's answer must satisfy" },
+    "tools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$" },
+      "description": "Engine tools the skill's steps may call on its behalf; any other tool is refused (POLICY)"
+    },
+    "appliesTo": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Entity types, source kinds or pipelines the skill is meant for"
+    },
+    "evalCases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^evals/[A-Za-z0-9._-]+\\.json$" },
+      "description": "Evaluation cases, relative to the skill directory"
+    },
+    "runtime": { "enum": ["engine", "claude-code", "both"], "default": "engine" }
+  }
+}

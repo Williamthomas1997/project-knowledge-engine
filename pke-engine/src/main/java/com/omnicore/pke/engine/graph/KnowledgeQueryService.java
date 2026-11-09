@@ -27,7 +27,8 @@ public class KnowledgeQueryService {
     public record Page<T>(List<T> items, int offset, int limit, long total) {
     }
 
-    public record EntityView(String id, String type, long version, String epistemic, Object validAt, String schemaVersion,
+    public record EntityView(String id, String type, long version, String status, String epistemic, Object validAt,
+                             Object invalidAt, String invalidationReason, String schemaVersion,
                              long createdSeq, long updatedSeq, Map<String, Object> properties,
                              List<Map<String, Object>> evidence) {
     }
@@ -141,7 +142,9 @@ public class KnowledgeQueryService {
 
     private static EntityView entityView(Map<String, Object> n, List<Map<String, Object>> evidence) {
         return new EntityView((String) n.get("pke_id"), (String) n.get("pke_type"), number(n.get("pke_version")),
-                (String) n.get("pke_epistemic"), n.get("pke_validAt"), (String) n.get("pke_schemaVersion"),
+                n.get("pke_status") == null ? "CURRENT" : (String) n.get("pke_status"), (String) n.get("pke_epistemic"),
+                n.get("pke_validAt"), n.get("pke_invalidAt"), (String) n.get("pke_invalidationReason"),
+                (String) n.get("pke_schemaVersion"),
                 number(n.get("pke_createdSeq")), number(n.get("pke_updatedSeq")),
                 KnowledgeWriter.domainProperties(n), evidence.stream().map(KnowledgeQueryService::evidenceView).toList());
     }

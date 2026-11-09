@@ -1,0 +1,41 @@
+{
+  "name": "A validation API with error codes",
+  "input": {
+    "api": {
+      "httpMethod": "POST",
+      "pathTemplate": "/v1/payments/validate",
+      "layer": "service",
+      "service": "payment-service",
+      "requestFields": [
+        "amount",
+        "currency",
+        "payeeBank"
+      ],
+      "responseFields": [
+        "paymentId",
+        "status"
+      ],
+      "handler": "PaymentController#validate(PaymentRequest)",
+      "calls": [
+        "PaymentService#checkPayeeBank(String)"
+      ],
+      "errorCodes": [
+        "007010"
+      ]
+    }
+  },
+  "expect": [
+    {
+      "pointer": "/summary",
+      "contains": "007010"
+    },
+    {
+      "pointer": "/summary",
+      "contains": "validat"
+    },
+    {
+      "pointer": "/keyTerms",
+      "minItems": 3
+    }
+  ]
+}
