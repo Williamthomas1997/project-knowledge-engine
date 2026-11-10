@@ -3,8 +3,8 @@ package com.omnicore.pke.engine.extract.java;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.omnicore.pke.engine.extract.ExtractedKnowledge;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
 import com.omnicore.pke.engine.support.DemoCorpus;
 import java.nio.file.Path;
 import java.util.List;

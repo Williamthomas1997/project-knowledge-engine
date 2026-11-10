@@ -1,0 +1,72 @@
+# Retrieval evaluation on the synthetic demo corpus (MASTER_SPEC §10.5, ADR-014).
+# Corpus: demo/transfer-service (FULL), demo/qa-automation (journeys), gateway routes, BRD v1 through brd-ingest.
+# expect.entities: each item is one expected result (any matching entity counts); props match exactly, textContains
+# matches text/summary/signature/fqcn/pathTemplate case-insensitively.
+# expect.facts: relationship types the task context should contain (graph completeness).
+# expect.sources: source keys the context should cite.
+kind: EvalDataset
+id: demo-transfer
+version: 1.0.0
+k: 5
+questions:
+  - id: spec-10-2
+    question: Which business requirements and APIs are affected if beneficiary currency validation changes?
+    expect:
+      entities:
+        - { type: KnowledgeCard, props: { requirementId: FR-1 } }
+        - { type: JavaMethod, props: { signature: "validateCurrency(String)" } }
+        - { type: ApiOperation, textContains: "international-transfers/validation" }
+      facts: [IMPLEMENTED_BY, HANDLED_BY]
+      sources: ["doc:international-transfer-brd", "repo:transfer-service"]
+  - id: spec-20-task
+    question: Modify beneficiary currency validation in the transfer flow.
+    expect:
+      entities:
+        - { type: JavaMethod, props: { signature: "validateCurrency(String)" } }
+        - { type: KnowledgeCard, props: { requirementId: FR-1 } }
+        - { type: TestCase, props: { methodName: rejectsUnsupportedBeneficiaryCurrency } }
+        - { type: ErrorCode, props: { code: "003040" } }
+      facts: [IMPLEMENTED_BY, TESTED_BY]
+      sources: ["doc:international-transfer-brd", "repo:transfer-service"]
+  - id: daily-limit
+    question: What is the daily limit for international transfers?
+    expect:
+      entities:
+        - { type: KnowledgeCard, textContains: "QAR 50,000" }
+      sources: ["doc:international-transfer-brd"]
+  - id: error-003041
+    question: What does error 003041 mean?
+    expect:
+      entities:
+        - { type: ErrorCode, props: { code: "003041" } }
+        - { type: KnowledgeCard, textContains: "Error 003041" }
+      sources: ["doc:international-transfer-brd"]
+  - id: throws-003040
+    question: Which method throws error 003040?
+    expect:
+      entities:
+        - { type: JavaMethod, props: { signature: "validateCurrency(String)" } }
+      sources: ["repo:transfer-service"]
+  - id: journey-execute
+    question: Which user journey calls the international transfer execute API?
+    expect:
+      entities:
+        - { type: UserJourney, props: { journeyKey: international-transfer } }
+        - { type: ApiOperation, textContains: "international-transfers/execute" }
+      facts: [CALLS_API, HAS_STEP]
+      sources: ["repo:qa-automation"]
+  - id: after-otp
+    question: What happens after the OTP check of an international transfer?
+    expect:
+      entities:
+        - { type: KnowledgeCard, props: { requirementId: FR-3 } }
+        - { type: JavaMethod, props: { signature: "execute(ExecuteRequest)" } }
+      facts: [IMPLEMENTED_BY]
+      sources: ["doc:international-transfer-brd"]
+  - id: kafka-executed
+    question: Which Kafka topic is published when a transfer is executed?
+    expect:
+      entities:
+        - { type: KafkaTopic, props: { name: transfer.executed } }
+        - { type: JavaMethod, props: { signature: "publishExecuted(String)" } }
+      sources: ["repo:transfer-service"]

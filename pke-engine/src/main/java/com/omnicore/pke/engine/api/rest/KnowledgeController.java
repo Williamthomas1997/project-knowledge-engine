@@ -2,19 +2,19 @@ package com.omnicore.pke.engine.api.rest;
 
 import com.omnicore.pke.engine.graph.GraphIntegrityService;
 import com.omnicore.pke.engine.graph.GraphIntegrityService.IntegrityReport;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipInvalidation;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.Outcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipInvalidation;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.EntityView;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.EventView;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.Page;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.RelationshipView;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.VersionView;
-import com.omnicore.pke.engine.graph.KnowledgeWriter;
+import com.omnicore.pke.engine.store.GraphStore;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,16 +27,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Knowledge read and write endpoints. All writes go through {@link KnowledgeWriter}. */
+/** Knowledge read and write endpoints. All writes go through {@link GraphStore}. */
 @RestController
 @RequestMapping("/api")
 class KnowledgeController {
 
-    private final KnowledgeWriter writer;
+    private final GraphStore writer;
     private final KnowledgeQueryService queries;
     private final GraphIntegrityService integrity;
 
-    KnowledgeController(KnowledgeWriter writer, KnowledgeQueryService queries, GraphIntegrityService integrity) {
+    KnowledgeController(GraphStore writer, KnowledgeQueryService queries, GraphIntegrityService integrity) {
         this.writer = writer;
         this.queries = queries;
         this.integrity = integrity;

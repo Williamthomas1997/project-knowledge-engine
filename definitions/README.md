@@ -10,6 +10,8 @@ Git-versioned metadata the engine loads at runtime. Format and promotion rules: 
   A name + version is immutable; the highest version is active. Format and runtime: `docs/adr/ADR-013-*.md`.
 - `pipelines/*.yaml` — pipelines (`meta/pipeline.schema.json`): steps are `PipelineStep` beans or `skill:<name>`.
 - `policies/relationships.yaml` — relationship policies (`meta/relationship-policies.schema.json`).
+- `queries/*.yaml` — read-only graph query templates for retrieval (`meta/query-template.schema.json`), checked by the
+  Cypher guard at startup (ADR-014).
 
 Git is the source of these definitions; the engine's schema registry decides which versions are active.
 See `docs/IMPLEMENTATION_PLAN.md` §6 and §9.

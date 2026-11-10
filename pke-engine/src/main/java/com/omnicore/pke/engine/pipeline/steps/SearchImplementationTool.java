@@ -96,9 +96,19 @@ class SearchImplementationTool implements SkillTool {
         Set<String> terms = new LinkedHashSet<>();
         for (String term : keyTerms) {
             Arrays.stream(term.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
-                    .filter(w -> w.length() >= 4 && !GENERIC.contains(w)).forEach(terms::add);
+                    .filter(w -> w.length() >= 4 && !GENERIC.contains(w)).map(SearchImplementationTool::stem).forEach(terms::add);
         }
         return List.copyOf(terms);
+    }
+
+    /** Light suffix stripping so "execution", "executed" and "execute" all match {@code execut}. */
+    static String stem(String word) {
+        for (String suffix : new String[] {"ations", "ation", "ions", "ion", "ing", "ed", "es", "e", "s"}) {
+            if (word.endsWith(suffix) && word.length() - suffix.length() >= 4) {
+                return word.substring(0, word.length() - suffix.length());
+            }
+        }
+        return word;
     }
 
     private static boolean excluded(String fqcn) {

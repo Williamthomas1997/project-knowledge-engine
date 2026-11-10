@@ -1,14 +1,15 @@
 package com.omnicore.pke.engine.graph;
 
+import com.omnicore.pke.engine.store.KnowledgeChanges;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityInvalidation;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityInvalidation;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.Outcome;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.VersionView;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import com.omnicore.pke.engine.kernel.ValidationFailedException;

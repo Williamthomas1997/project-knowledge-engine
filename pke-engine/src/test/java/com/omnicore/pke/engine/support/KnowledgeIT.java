@@ -20,7 +20,7 @@ import org.springframework.test.context.DynamicPropertySource;
 @RequiresNeo4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("replay")
-@Import({TestFaultInjector.class, TestPipelineSupport.class})
+@Import({TestFaultInjector.class, TestPipelineSupport.class, TestVectorStoreFaults.class, DemoKnowledge.class})
 public abstract class KnowledgeIT {
 
     @DynamicPropertySource
@@ -28,6 +28,10 @@ public abstract class KnowledgeIT {
         Neo4jTestDatabase.registerSpringProperties(registry);
         registry.add("pke.ingestion.route-export-files", () -> DemoCorpus.file("routes/ocs_t_gateway_api_route.sql").toString());
         registry.add("pke.data-dir", () -> System.getProperty("java.io.tmpdir") + "/pke-it-data");
+        // the index worker is driven by the code under test (runs and pipelines wait for their tasks) or by tests
+        registry.add("pke.index.worker-enabled", () -> "false");
+        registry.add("pke.index.await-timeout", () -> "PT10S");
+        registry.add("pke.index.retry-backoff", () -> "PT0.2S");
         registry.add("pke.pipelines.locations",
                 () -> "classpath*:definitions/pipelines/*.yaml,classpath*:test-pipelines/*.yaml");
     }
@@ -44,6 +48,12 @@ public abstract class KnowledgeIT {
     @Autowired
     private PipelineBootstrap pipelineBootstrap;
 
+    @Autowired
+    protected TestVectorStoreFaults vectorFaults;
+
+    @Autowired
+    private com.omnicore.pke.engine.index.IndexBootstrap indexBootstrap;
+
     @LocalServerPort
     protected int port;
 
@@ -51,9 +61,11 @@ public abstract class KnowledgeIT {
     void resetKnowledge() {
         faults.reset();
         pipelineFaults.reset();
+        vectorFaults.down = false;
         Neo4jTestDatabase.wipe();
         schemaService.bootstrap();
         pipelineBootstrap.load();
+        indexBootstrap.load();
     }
 
     /** Runs a count query directly against the test database (bypassing the engine). */

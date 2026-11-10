@@ -1,6 +1,6 @@
 package com.omnicore.pke.engine.extract;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import java.util.List;
 import java.util.Map;
 

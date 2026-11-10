@@ -1,0 +1,24 @@
+kind: QueryTemplate
+id: requirements-of-api
+version: 1.0.0
+description: >-
+  Requirements and rules implemented by an API: cards linked to the API or to a method its handler calls (up to 3 hops).
+intents: ["requirements"]
+keywords: ["requirement", "requirements", "rule", "rules", "business", "brd", "why"]
+seedTypes: ["ApiOperation"]
+default: true
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (api:ApiOperation {pke_id: $seedId})
+  OPTIONAL MATCH (api)-[:HANDLED_BY]->(h:JavaMethod)
+  OPTIONAL MATCH (h)-[:CALLS*0..3]->(m:JavaMethod)
+  WITH api, collect(DISTINCT m) AS methods
+  UNWIND [api] + methods AS target
+  MATCH (card:KnowledgeCard)-[r:IMPLEMENTED_BY]->(target)
+  WHERE coalesce(card.pke_status, 'CURRENT') = 'CURRENT'
+  UNWIND [
+    {id: card.pke_id, kind: 'ENTITY', type: 'KnowledgeCard', label: card.text, detail: coalesce(card.requirementId, card.kind), depth: 1},
+    {id: r.pke_relId, kind: 'RELATIONSHIP', type: 'IMPLEMENTED_BY', label: coalesce(card.requirementId, 'card') + ' implemented by ' + coalesce(target.signature, target.pathTemplate), detail: coalesce(r.rationale, ''), depth: 1}
+  ] AS row
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

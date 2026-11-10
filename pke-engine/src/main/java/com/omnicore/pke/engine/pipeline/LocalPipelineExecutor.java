@@ -2,6 +2,7 @@ package com.omnicore.pke.engine.pipeline;
 
 import com.omnicore.pke.engine.ai.AiCallException;
 import com.omnicore.pke.engine.graph.PipelineExecutionStore;
+import com.omnicore.pke.engine.index.OperationIndexing;
 import com.omnicore.pke.engine.graph.PipelineExecutionStore.ExecutionView;
 import com.omnicore.pke.engine.graph.PipelineExecutionStore.StepView;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
@@ -71,6 +72,7 @@ public class LocalPipelineExecutor implements PipelineExecutor {
     private final Map<String, PipelineStep> steps;
     private final SkillRunner skills;
     private final SourceVersionResolver sourceVersions;
+    private final OperationIndexing indexing;
     private final List<PipelineFaultInjector> faults;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> daemon(r, "pke-pipeline"));
     private final ExecutorService stepThreads = Executors.newCachedThreadPool(r -> daemon(r, "pke-pipeline-step"));
@@ -78,7 +80,8 @@ public class LocalPipelineExecutor implements PipelineExecutor {
 
     public LocalPipelineExecutor(PipelineRegistry registry, PipelineExecutionStore store, List<PipelineStep> steps,
                                  SkillRunner skills, SourceVersionResolver sourceVersions,
-                                 ObjectProvider<PipelineFaultInjector> faults) {
+                                 ObjectProvider<PipelineFaultInjector> faults, OperationIndexing indexing) {
+        this.indexing = indexing;
         this.registry = registry;
         this.store = store;
         this.steps = steps.stream().collect(Collectors.toUnmodifiableMap(PipelineStep::name, Function.identity()));
@@ -229,9 +232,12 @@ public class LocalPipelineExecutor implements PipelineExecutor {
                 skippedAt = step.id();
             }
         }
-        store.updateExecution(executionId, fields("status", skippedAt == null ? "COMPLETED" : "PARTIAL",
-                "error", skippedAt == null ? null : "no model configured: skipped from step '" + skippedAt + "'",
-                "finishedAt", now()));
+        long openIndexTasks = indexing.await(executionId);
+        String status = skippedAt == null && openIndexTasks == 0 ? "COMPLETED" : "PARTIAL";
+        String error = skippedAt != null ? "no model configured: skipped from step '" + skippedAt + "'"
+                : openIndexTasks > 0 ? openIndexTasks + " vector index tasks are still open; the index worker completes them" : null;
+        store.updateExecution(executionId, fields("status", status, "error", error, "finishedAt", now(),
+                "indexPending", skippedAt == null && openIndexTasks > 0));
     }
 
     private record StepOutcome(Map<String, Object> output, StepFailure failure) {

@@ -9,5 +9,7 @@ public record SystemInfo(
         List<String> activeProfiles,
         boolean chatModelConfigured,
         String chatModel,
-        boolean embeddingModelConfigured) {
+        boolean embeddingModelConfigured,
+        String embeddingModel,
+        String vectorStore) {
 }

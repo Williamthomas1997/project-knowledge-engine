@@ -1,13 +1,13 @@
 package com.omnicore.pke.engine.ingest;
 
 import com.omnicore.pke.engine.extract.ExtractedKnowledge;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ItemOutcome;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ScopeRetraction;
-import com.omnicore.pke.engine.graph.KnowledgeWriter;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ItemOutcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ScopeRetraction;
+import com.omnicore.pke.engine.store.GraphStore;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
 import com.omnicore.pke.engine.schema.EntityTypeDefinition;
 import com.omnicore.pke.engine.schema.SchemaRegistry;
@@ -30,10 +30,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class KnowledgeBatchWriter {
 
-    private final KnowledgeWriter writer;
+    private final GraphStore writer;
     private final SchemaRegistry registry;
 
-    public KnowledgeBatchWriter(KnowledgeWriter writer, SchemaRegistry registry) {
+    public KnowledgeBatchWriter(GraphStore writer, SchemaRegistry registry) {
         this.writer = writer;
         this.registry = registry;
     }

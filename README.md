@@ -4,7 +4,10 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M3, AI layer.** On top of M1 (schema registry, single graph writer with history) and M2 (documents,
+Status: **M4, retrieval.** Pluggable vector store (Neo4j vector index by default, Qdrant as second adapter) with
+collections derived from the schema, a transactional outbox and reconciliation; hybrid retrieval (catalog routing,
+vector + fulltext, RRF, eight graph query templates, a guarded LLM-Cypher fallback); task context in four sections with
+citations (`POST /api/context`); an evaluation runner (`mvn -Peval verify`). Earlier: **M3, AI layer.** On top of M1 (schema registry, single graph writer with history) and M2 (documents,
 Java code through Git, journeys, routes): provider-neutral AI ports with a cost ledger; Claude-compatible skills
 (`definitions/skills/`) and YAML pipelines (`definitions/pipelines/`) with a persisted, resumable executor; BRD
 sections rewritten into knowledge cards and reconciled Mem0-style (ADD / UPDATE / NOOP / INVALIDATE, with history);
@@ -21,6 +24,9 @@ milestones, and `docs/reports/` for what each milestone actually delivered.
   - **Neo4j Desktop**: a DBMS of version 5.26/2025.x or newer. For the tests, use a separate database (for example
     `pketest`). The tests create it if the DBMS is Enterprise (Desktop is), and **delete all of its data**.
 - An OpenAI API key is **not** needed to build, test or run. It is only used with the `openai` profile.
+  Embeddings default to a deterministic local model (`hashing-384`); the `openai` profile uses OpenAI embeddings.
+- Docker runs the Qdrant contract tests too (`qdrant/qdrant:v1.18.0`). Qdrant is optional at runtime
+  (`--pke.vector.provider=qdrant --pke.vector.qdrant.host=...`).
   Tests replay recorded model answers (`pke-engine/src/test/resources/ai-fixtures`); without a model, AI pipeline
   steps report `SKIPPED_NO_MODEL` and write nothing.
 
@@ -129,6 +135,16 @@ curl -X POST 'localhost:8080/api/pipelines/code-ingest/executions?wait=true' -H 
 curl localhost:8080/api/ai/calls                              # cost ledger
 ```
 
+### Ask for context (M4)
+
+```bash
+curl -X POST localhost:8080/api/context -H 'Content-Type: application/json' \
+     -d '{"task":"Modify beneficiary currency validation in the transfer flow.","budgetTokens":2000}'
+curl -X POST localhost:8080/api/retrieval/search -H 'Content-Type: application/json' -d '{"query":"daily limit"}'
+curl localhost:8080/api/sync/status                    # what is not processed, stale or pending
+curl -X POST localhost:8080/api/eval/runs -H 'Content-Type: application/json' -d '{}'
+```
+
 Gateway route exports (the `ocs_t_gateway_api_route` INSERT scripts) are read from
 `pke.ingestion.route-export-files`; see `IngestionProperties` for all ingestion settings.
 
@@ -142,9 +158,9 @@ pke-spi/       plugin contracts (plain Java, no Spring, enforced)
 pke-engine/    the Spring Boot application (packages listed in IMPLEMENTATION_PLAN §1)
 pke-plugins/   Level-3 plugins, one sub-module each
 definitions/   Git-versioned definitions: meta/ (JSON Schema 2020-12), schema/ (entity + relationship types),
-               skills/ (SKILL.md + evals), pipelines/ (YAML), policies/ (relationship policies)
+               skills/ (SKILL.md + evals), pipelines/ (YAML), policies/ (relationship policies), queries/ (graph templates)
 demo/          synthetic corpus used by all tests: BRD (.md/.docx), transfer service + change commits, QA project, routes
-eval/          evaluation datasets (M4)
+eval/          evaluation datasets (eval/datasets/*.yaml; mvn -Peval verify)
 docker/        compose file for a local Neo4j
 docs/          spec, plan, ADRs (adr/), REST reference (api/), milestone prompts and reports
 ```

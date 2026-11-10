@@ -14,9 +14,11 @@ public class SystemInfoService {
     private final ModelAvailability models;
     private final Environment environment;
     private final ObjectProvider<BuildProperties> buildProperties;
+    private final String vectorProvider;
 
     public SystemInfoService(Neo4jCapabilityCheck neo4j, ModelAvailability models, Environment environment,
                              ObjectProvider<BuildProperties> buildProperties) {
+        this.vectorProvider = environment.getProperty("pke.vector.provider", "neo4j");
         this.neo4j = neo4j;
         this.models = models;
         this.environment = environment;
@@ -33,6 +35,8 @@ public class SystemInfoService {
                 List.of(environment.getActiveProfiles()),
                 models.chatModelConfigured(),
                 models.chatModel(),
-                models.embeddingModelConfigured());
+                models.embeddingModelConfigured(),
+                models.embeddingModel(),
+                vectorProvider);
     }
 }

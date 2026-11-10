@@ -1,11 +1,12 @@
 package com.omnicore.pke.engine.graph;
 
+import com.omnicore.pke.engine.store.KnowledgeChanges;
 import static com.omnicore.pke.engine.support.Demo.method;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import com.omnicore.pke.engine.support.KnowledgeIT;
 import com.omnicore.pke.engine.support.Neo4jTestDatabase;

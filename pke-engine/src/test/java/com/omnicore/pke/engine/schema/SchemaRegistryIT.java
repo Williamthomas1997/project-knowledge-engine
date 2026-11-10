@@ -3,12 +3,12 @@ package com.omnicore.pke.engine.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.Outcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
 import com.omnicore.pke.engine.graph.KnowledgeWriter;
 import com.omnicore.pke.engine.kernel.ConflictException;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;

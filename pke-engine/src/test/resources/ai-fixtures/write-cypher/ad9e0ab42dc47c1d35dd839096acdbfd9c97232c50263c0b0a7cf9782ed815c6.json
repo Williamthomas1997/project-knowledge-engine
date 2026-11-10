@@ -1,0 +1,29 @@
+{
+  "skill": "write-cypher",
+  "skillVersion": "1.0.0",
+  "inputHash": "ad9e0ab42dc47c1d35dd839096acdbfd9c97232c50263c0b0a7cf9782ed815c6",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 600,
+  "tokensOut": 72,
+  "input": {
+    "question": "Which Kafka topics does the payment service publish to?",
+    "seeds": [
+      {
+        "id": "seed-1",
+        "type": "JavaClass",
+        "label": "com.demo.pay.PaymentEventPublisher"
+      }
+    ],
+    "schema": [
+      "Entity type JavaClass (label :JavaClass, category technical): A Java class. Properties: repository, fqcn, kind, path. Outgoing: DECLARES->JavaMethod. Incoming: .",
+      "Entity type JavaMethod (label :JavaMethod, category technical): A method. Properties: repository, fqcn, signature. Outgoing: PUBLISHES_TO->KafkaTopic, CALLS->JavaMethod. Incoming: JavaClass-DECLARES->.",
+      "Entity type KafkaTopic (label :KafkaTopic, category technical): A Kafka topic. Properties: name, placeholder. Outgoing: . Incoming: JavaMethod-PUBLISHES_TO->."
+    ]
+  },
+  "response": {
+    "cypher": "MATCH (m:JavaMethod)-[:PUBLISHES_TO]->(t:KafkaTopic) WHERE m.pke_id IN $seedIds RETURN DISTINCT t.pke_id AS id, 'KafkaTopic' AS type, t.name AS label, m.signature AS detail LIMIT 50",
+    "explanation": "Kafka topics that the seed methods publish to, with the publishing method."
+  }
+}

@@ -28,7 +28,8 @@ class SystemInfoIT extends KnowledgeIT {
         // integration tests replay recorded answers; no provider model is configured
         assertThat(body.get("chatModelConfigured").asBoolean()).isTrue();
         assertThat(body.get("chatModel").asString()).isEqualTo("replay");
-        assertThat(body.get("embeddingModelConfigured").asBoolean()).isFalse();
+        assertThat(body.get("embeddingModel").asString()).isEqualTo("hashing-384");
+        assertThat(body.get("vectorStore").asString()).isEqualTo("neo4j");
     }
 
     @Test

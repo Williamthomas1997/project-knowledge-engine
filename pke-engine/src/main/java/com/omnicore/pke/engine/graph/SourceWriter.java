@@ -64,6 +64,39 @@ public class SourceWriter {
         });
     }
 
+    /**
+     * Records a version of an exported file the engine reads but does not parse into sections (e.g. the gateway route
+     * export), so evidence citing it resolves: {@code kind: export}, version = content hash. Unchanged input writes
+     * nothing; a new hash is a new current version.
+     */
+    public SourceResult recordExportVersion(String key, String name, String path, String contentHash, String actor) {
+        return transactions.write(actor, PkeIds.uuidV7().toString(), ctx -> {
+            String artifactId = PkeIds.sourceArtifactId(key);
+            Map<String, Object> config = new LinkedHashMap<>();
+            config.put("name", name);
+            config.put("path", path);
+            Outcome artifact = upsertArtifact(ctx, key, "export", config);
+            String versionId = PkeIds.sourceVersionId(key, contentHash);
+            boolean known = ctx.single("MATCH (v:SourceVersion {pke_id: $id}) RETURN v.pke_id AS id", Map.of("id", versionId)).isPresent();
+            boolean current = ctx.single("MATCH (:SourceArtifact {pke_id: $a})-[:CURRENT_VERSION]->(v:SourceVersion {pke_id: $v}) RETURN v.pke_id AS id",
+                    Map.of("a", artifactId, "v", versionId)).isPresent();
+            if (known && current && artifact == Outcome.UNCHANGED) {
+                return new SourceResult(artifactId, key, versionId, contentHash, Outcome.UNCHANGED, null);
+            }
+            if (!known) {
+                ctx.run("""
+                        MATCH (a:SourceArtifact {pke_id: $artifactId})
+                        CREATE (a)-[:HAS_VERSION]->(:SourceVersion {pke_id: $id, artifactKey: $key, kind: 'export',
+                                version: $version, contentHash: $version, recordedAt: $at})""",
+                        Map.of("artifactId", artifactId, "id", versionId, "key", key, "version", contentHash, "at", ctx.now()));
+            }
+            pointCurrent(ctx, artifactId, versionId);
+            Long seq = emit(ctx, key, ChangeEventTypes.EXPORT_VERSION_RECORDED,
+                    Map.of("kind", "export", "version", contentHash));
+            return new SourceResult(artifactId, key, versionId, contentHash, known ? Outcome.REINSTATED : Outcome.CREATED, seq);
+        });
+    }
+
     /** Adds a document version (or reparses / reinstates an existing one). Unchanged input writes nothing. */
     public SourceResult addDocumentVersion(DocumentVersionInput in, String actor) {
         return transactions.write(actor, PkeIds.uuidV7().toString(), ctx -> {

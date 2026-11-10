@@ -1,11 +1,12 @@
 package com.omnicore.pke.engine.graph;
 
+import com.omnicore.pke.engine.store.KnowledgeChanges;
 import static com.omnicore.pke.engine.support.Demo.calls;
 import static com.omnicore.pke.engine.support.Demo.method;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
 import com.omnicore.pke.engine.support.KnowledgeIT;
 import com.omnicore.pke.engine.support.TestFaultInjector.InjectedFailure;
 import java.util.List;

@@ -1,0 +1,107 @@
+{
+  "skill": "link-requirement-to-implementation",
+  "skillVersion": "1.0.0",
+  "inputHash": "a349655eba32f405579db4a92370ba2e4b16df4ff43c3c6d2ab4a983dbb25e3c",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1204,
+  "tokensOut": 37,
+  "input": {
+    "candidates": [
+      {
+        "label": "TransferService#validate(TransferRequest)",
+        "ref": "I1",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService; throws 003041"
+      },
+      {
+        "label": "POST /api/v2/international-transfers/validation (gateway, gateway)",
+        "ref": "I2",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)",
+        "ref": "I3",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "label": "POST /api/v3/international-transfers/execute (gateway, gateway)",
+        "ref": "I4",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)"
+      },
+      {
+        "label": "POST /api/v3/international-transfers/execute (service, transfer-service)",
+        "ref": "I5",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)"
+      },
+      {
+        "label": "TransferClient#execute(String)",
+        "ref": "I6",
+        "type": "JavaMethod",
+        "detail": "com.demo.qa.clients.TransferClient"
+      },
+      {
+        "label": "TransferClient#ftAccounts()",
+        "ref": "I7",
+        "type": "JavaMethod",
+        "detail": "com.demo.qa.clients.TransferClient"
+      },
+      {
+        "label": "TransferClient#post(TransferService,String,Object)",
+        "ref": "I8",
+        "type": "JavaMethod",
+        "detail": "com.demo.qa.clients.TransferClient"
+      },
+      {
+        "label": "TransferClient#validate(String)",
+        "ref": "I9",
+        "type": "JavaMethod",
+        "detail": "com.demo.qa.clients.TransferClient"
+      },
+      {
+        "label": "TransferController#TransferController(TransferService)",
+        "ref": "I10",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#execute(ExecuteRequest)",
+        "ref": "I11",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#ftAccounts(AccountsRequest)",
+        "ref": "I12",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      }
+    ],
+    "requirement": {
+      "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
+      "kind": "rule",
+      "requirementId": "FR-2",
+      "keyTerms": [
+        "daily limit",
+        "transfer limit",
+        "amount in QAR",
+        "003041",
+        "FR-2"
+      ]
+    }
+  },
+  "response": {
+    "links": [
+      {
+        "candidate": "I1",
+        "rationale": "Converts the amount to QAR and throws 003041 when it exceeds the maximum amount.",
+        "confidence": 0.85
+      }
+    ]
+  }
+}

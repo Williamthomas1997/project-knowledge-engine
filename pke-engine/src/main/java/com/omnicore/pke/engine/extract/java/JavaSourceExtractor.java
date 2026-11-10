@@ -45,8 +45,8 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.omnicore.pke.engine.extract.ApiOperations;
 import com.omnicore.pke.engine.extract.ExtractedKnowledge;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
 import com.omnicore.pke.spi.journey.JourneyDefinition.Field;
 import java.io.IOException;

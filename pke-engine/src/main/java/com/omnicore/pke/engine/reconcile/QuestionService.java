@@ -1,13 +1,13 @@
 package com.omnicore.pke.engine.reconcile;
 
 import com.omnicore.pke.engine.graph.CardQueryService;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
-import com.omnicore.pke.engine.graph.KnowledgeWriter;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.GraphStore;
 import com.omnicore.pke.engine.graph.QuestionStore;
 import com.omnicore.pke.engine.graph.QuestionStore.QuestionView;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
@@ -40,10 +40,10 @@ public class QuestionService {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final QuestionStore store;
-    private final KnowledgeWriter writer;
+    private final GraphStore writer;
     private final CardQueryService cards;
 
-    public QuestionService(QuestionStore store, KnowledgeWriter writer, CardQueryService cards) {
+    public QuestionService(QuestionStore store, GraphStore writer, CardQueryService cards) {
         this.store = store;
         this.writer = writer;
         this.cards = cards;

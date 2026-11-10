@@ -28,4 +28,8 @@ public class ModelAvailability {
     public String chatModel() {
         return chat.describe();
     }
+
+    public String embeddingModel() {
+        return embeddings.describe();
+    }
 }

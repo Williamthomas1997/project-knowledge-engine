@@ -8,8 +8,8 @@ import com.omnicore.pke.engine.extract.route.RouteResolver.Resolution;
 import com.omnicore.pke.engine.extract.route.RouteResolver.ServiceHandler;
 import com.omnicore.pke.engine.extract.route.SpringMappingRouteResolver;
 import com.omnicore.pke.engine.graph.CodeQueryService;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import com.omnicore.pke.engine.ingest.KnowledgeBatchWriter.Scoped;
 import com.omnicore.pke.engine.ingest.KnowledgeBatchWriter.Stats;
 import java.nio.file.Files;
@@ -33,8 +33,11 @@ public class RouteResolutionService {
     private final CodeQueryService codeQueries;
     private final KnowledgeBatchWriter batchWriter;
     private final IngestionProperties properties;
+    private final com.omnicore.pke.engine.graph.SourceWriter sources;
 
-    public RouteResolutionService(CodeQueryService codeQueries, KnowledgeBatchWriter batchWriter, IngestionProperties properties) {
+    public RouteResolutionService(CodeQueryService codeQueries, KnowledgeBatchWriter batchWriter, IngestionProperties properties,
+                                  com.omnicore.pke.engine.graph.SourceWriter sources) {
+        this.sources = sources;
         this.codeQueries = codeQueries;
         this.batchWriter = batchWriter;
         this.properties = properties;
@@ -52,6 +55,16 @@ public class RouteResolutionService {
         List<RouteResolver> resolvers = new ArrayList<>();
         List<Path> exports = properties.routeExportFiles().stream().map(Path::of).filter(Files::isRegularFile).toList();
         if (!exports.isEmpty()) {
+            // register each export as a source version, so route evidence (routes:<file>@<hash>) is a resolvable citation
+            for (Path export : exports) {
+                try {
+                    sources.recordExportVersion("routes:" + export.getFileName(), export.getFileName().toString(),
+                            export.toString(), com.omnicore.pke.engine.source.FileSystemDocumentStore.sha256(Files.readAllBytes(export)),
+                            actor);
+                } catch (java.io.IOException e) {
+                    throw new java.io.UncheckedIOException("Cannot read route export " + export, e);
+                }
+            }
             resolvers.add(new GatewayRouteExportResolver(exports, properties.routeTable()));
         }
         resolvers.add(new SpringMappingRouteResolver());

@@ -1,7 +1,7 @@
 package com.omnicore.pke.engine.reconcile;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import com.omnicore.pke.engine.kernel.PkeIds;
 import java.util.ArrayList;

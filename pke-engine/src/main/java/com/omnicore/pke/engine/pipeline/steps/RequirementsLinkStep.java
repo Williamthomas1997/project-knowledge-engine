@@ -3,13 +3,13 @@ package com.omnicore.pke.engine.pipeline.steps;
 import com.omnicore.pke.engine.graph.CardQueryService;
 import com.omnicore.pke.engine.graph.CardQueryService.CardView;
 import com.omnicore.pke.engine.graph.FingerprintStore;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ScopeRetraction;
-import com.omnicore.pke.engine.graph.KnowledgeWriter;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ScopeRetraction;
+import com.omnicore.pke.engine.store.GraphStore;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import com.omnicore.pke.engine.pipeline.LocalPipelineExecutor;
@@ -57,12 +57,12 @@ class RequirementsLinkStep implements PipelineStep {
     private final SkillRunner skills;
     private final SkillRegistry registry;
     private final FingerprintStore fingerprints;
-    private final KnowledgeWriter writer;
+    private final GraphStore writer;
     private final RelationshipPolicies policies;
     private final QuestionService questions;
 
     RequirementsLinkStep(CardQueryService cards, SkillRunner skills, SkillRegistry registry, FingerprintStore fingerprints,
-                         KnowledgeWriter writer, RelationshipPolicies policies, QuestionService questions) {
+                         GraphStore writer, RelationshipPolicies policies, QuestionService questions) {
         this.cards = cards;
         this.skills = skills;
         this.registry = registry;
@@ -152,7 +152,7 @@ class RequirementsLinkStep implements PipelineStep {
             ChangeResult result = writer.apply(new ChangeSet(context.executionId(), List.of(), writes, List.of(),
                     List.of(retraction), true), context.actor());
             linked += (int) result.items().stream().filter(i -> "RELATIONSHIP".equals(i.kind())
-                    && i.outcome() != com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome.INVALIDATED).count();
+                    && i.outcome() != com.omnicore.pke.engine.store.KnowledgeChanges.Outcome.INVALIDATED).count();
             fingerprints.record(FINGERPRINT_KIND, fingerprint, card.id(), context.executionId());
         }
         Map<String, Object> out = new LinkedHashMap<>();

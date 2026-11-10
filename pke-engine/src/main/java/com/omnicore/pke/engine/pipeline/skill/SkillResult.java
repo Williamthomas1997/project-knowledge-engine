@@ -1,6 +1,6 @@
 package com.omnicore.pke.engine.pipeline.skill;
 
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import java.util.LinkedHashMap;
 import java.util.Map;

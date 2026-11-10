@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/query-template.schema.json",
+  "title": "PKE graph query template",
+  "description": "definitions/queries/<id>.yaml: parameterised, read-only Cypher expanding from a seed entity (ADR-007 §7). Rows: id, kind, type, label, detail, depth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "id", "version", "description", "seedTypes", "cypher"],
+  "properties": {
+    "kind": { "const": "QueryTemplate" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
+    "description": { "type": "string", "minLength": 1 },
+    "intents": { "type": "array", "items": { "type": "string" } },
+    "keywords": { "type": "array", "items": { "type": "string" }, "description": "Question words that select the template" },
+    "seedTypes": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Entity types the template expands from; * = any" },
+    "default": { "type": "boolean", "description": "Also run for a seed of these types when no keyword matches" },
+    "parameters": { "type": "object" },
+    "cypher": { "type": "string", "minLength": 10 }
+  }
+}

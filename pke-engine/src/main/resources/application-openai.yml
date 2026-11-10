@@ -5,3 +5,7 @@ spring:
       embedding: openai
     openai:
       api-key: ${OPENAI_API_KEY}
+pke:
+  embedding:
+    # new embedding generations use the Spring AI (OpenAI) model; switch with POST /api/embeddings/generations
+    model: spring-ai

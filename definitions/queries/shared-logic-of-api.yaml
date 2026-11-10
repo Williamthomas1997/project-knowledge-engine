@@ -1,0 +1,21 @@
+kind: QueryTemplate
+id: shared-logic-of-api
+version: 1.0.0
+description: >-
+  Other APIs that share non-trivial business logic with this API: methods reached from both handlers (up to 4 hops). Utilities, configuration, constants, DTOs, mappers and logging are excluded.
+intents: ["shared-logic"]
+keywords: ["shared", "share", "same logic", "common", "reuse", "other apis"]
+seedTypes: ["ApiOperation"]
+default: false
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (api:ApiOperation {pke_id: $seedId})-[:HANDLED_BY]->(h:JavaMethod)
+  MATCH (h)-[:CALLS*1..4]->(shared:JavaMethod)<-[:CALLS*1..4]-(h2:JavaMethod)<-[:HANDLED_BY]-(other:ApiOperation)
+  WHERE h2 <> h AND NOT shared.fqcn =~ '(?i).*(util|config|constant|logging|dto|mapper|properties).*'
+  WITH DISTINCT shared, other
+  UNWIND [
+    {id: shared.pke_id, kind: 'ENTITY', type: 'JavaMethod', label: shared.fqcn + '#' + shared.signature, detail: 'shared logic', depth: 2},
+    {id: other.pke_id, kind: 'ENTITY', type: 'ApiOperation', label: other.httpMethod + ' ' + other.pathTemplate, detail: 'also reaches ' + shared.signature, depth: 3}
+  ] AS row
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

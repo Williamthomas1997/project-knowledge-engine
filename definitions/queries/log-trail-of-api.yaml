@@ -1,0 +1,21 @@
+kind: QueryTemplate
+id: log-trail-of-api
+version: 1.0.0
+description: >-
+  The log statements an API can write, in call order: its handler's call tree (up to 4 hops), then each method's log statements in source order.
+intents: ["log-trail"]
+keywords: ["log", "logs", "logging", "trail", "trace", "debug", "troubleshoot"]
+seedTypes: ["ApiOperation"]
+default: false
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (api:ApiOperation {pke_id: $seedId})-[:HANDLED_BY]->(h:JavaMethod)
+  MATCH path = (h)-[:CALLS*0..4]->(m:JavaMethod)
+  WITH m, min(length(path)) AS hops
+  MATCH (m)-[l:LOGS]->(log:LogStatement)
+  WITH m, hops, l, log ORDER BY hops, m.signature, log.order
+  UNWIND [
+    {id: log.pke_id, kind: 'ENTITY', type: 'LogStatement', label: log.level + ' ' + log.template, detail: m.fqcn + '#' + m.signature, depth: hops}
+  ] AS row
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

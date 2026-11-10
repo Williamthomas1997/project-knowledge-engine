@@ -3,13 +3,13 @@ package com.omnicore.pke.engine.pipeline.steps;
 import com.omnicore.pke.engine.graph.CardQueryService;
 import com.omnicore.pke.engine.graph.CardQueryService.CardView;
 import com.omnicore.pke.engine.graph.FingerprintStore;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityInvalidation;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ItemOutcome;
-import com.omnicore.pke.engine.graph.KnowledgeWriter;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityInvalidation;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ItemOutcome;
+import com.omnicore.pke.engine.store.GraphStore;
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import com.omnicore.pke.engine.pipeline.skill.SkillResult.Provenance;
 import com.omnicore.pke.engine.reconcile.KnowledgeCards;
@@ -38,12 +38,12 @@ import org.springframework.stereotype.Component;
 @Component
 class CardsApplyStep implements PipelineStep {
 
-    private final KnowledgeWriter writer;
+    private final GraphStore writer;
     private final QuestionService questions;
     private final FingerprintStore fingerprints;
     private final CardQueryService cards;
 
-    CardsApplyStep(KnowledgeWriter writer, QuestionService questions, FingerprintStore fingerprints, CardQueryService cards) {
+    CardsApplyStep(GraphStore writer, QuestionService questions, FingerprintStore fingerprints, CardQueryService cards) {
         this.writer = writer;
         this.questions = questions;
         this.fingerprints = fingerprints;

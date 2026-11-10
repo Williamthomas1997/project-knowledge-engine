@@ -1,0 +1,24 @@
+kind: QueryTemplate
+id: evidence-of
+version: 1.0.0
+description: >-
+  The evidence behind an entity or relationship: source, version, location, extraction method, excerpt and cited section.
+intents: ["evidence"]
+keywords: ["evidence", "source", "sources", "proof", "citation", "where does", "why do we know"]
+seedTypes: ["*"]
+default: false
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  CALL (*) {
+    MATCH (n:Entity {pke_id: $seedId}) RETURN n AS subject
+    UNION
+    MATCH (n:Assertion {pke_id: $seedId}) RETURN n AS subject
+  }
+  MATCH (subject)-[:SUPPORTED_BY]->(e:Evidence)
+  OPTIONAL MATCH (e)-[:CITES]->(s:Section)
+  WITH e, s ORDER BY e.recordedSeq
+  UNWIND [
+    {id: e.pke_id, kind: 'EVIDENCE', type: e.extractionMethod, label: e.sourceArtifactId + '@' + coalesce(e.sourceVersion, '') + '#' + coalesce(s.heading, e.location, ''), detail: coalesce(e.excerpt, ''), depth: 1}
+  ] AS row
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

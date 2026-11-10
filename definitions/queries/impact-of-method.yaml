@@ -1,0 +1,29 @@
+kind: QueryTemplate
+id: impact-of-method
+version: 1.0.0
+description: >-
+  What is affected when a method changes: its callers (up to 3 hops), the APIs they handle, the journeys calling those APIs and the tests covering them.
+intents: ["impact"]
+keywords: ["impact", "affected", "affect", "change", "changes", "modify", "break", "callers", "who calls"]
+seedTypes: ["JavaMethod"]
+default: true
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (seed:JavaMethod {pke_id: $seedId})
+  OPTIONAL MATCH path = (caller:JavaMethod)-[:CALLS*1..3]->(seed)
+  WITH seed, caller, min(length(path)) AS hops
+  WITH seed, collect([caller, hops]) AS callers
+  UNWIND [[seed, 0]] + [pair IN callers WHERE pair[0] IS NOT NULL] AS pair
+  WITH pair[0] AS m, pair[1] AS hops
+  OPTIONAL MATCH (api:ApiOperation)-[:HANDLED_BY]->(m)
+  OPTIONAL MATCH (j:UserJourney)-[:HAS_STEP]->(:JourneyStep)-[:CALLS_API]->(api)
+  OPTIONAL MATCH (m)-[:TESTED_BY]->(t:TestCase)
+  UNWIND [
+    {id: m.pke_id, kind: 'ENTITY', type: 'JavaMethod', label: m.fqcn + '#' + m.signature, detail: CASE hops WHEN 0 THEN 'changed method' ELSE 'caller at ' + hops + ' hop(s)' END, depth: hops},
+    {id: api.pke_id, kind: 'ENTITY', type: 'ApiOperation', label: api.httpMethod + ' ' + api.pathTemplate, detail: 'API handled by ' + m.signature, depth: hops + 1},
+    {id: j.pke_id, kind: 'ENTITY', type: 'UserJourney', label: j.journeyKey, detail: 'journey calling ' + api.pathTemplate, depth: hops + 2},
+    {id: t.pke_id, kind: 'ENTITY', type: 'TestCase', label: t.fqcn + '#' + t.methodName, detail: 'tests ' + m.signature, depth: hops + 1}
+  ] AS row
+  WITH row WHERE row.id IS NOT NULL
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

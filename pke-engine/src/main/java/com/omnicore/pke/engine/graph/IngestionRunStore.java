@@ -54,6 +54,12 @@ public class IngestionRunStore {
                 Map.of("id", id, "fields", fields)));
     }
 
+    /** True when the run ended PARTIAL only because its vector index tasks were still open. */
+    public boolean indexPending(String id) {
+        return reader.single("MATCH (r:IngestionRun {pke_id: $id}) RETURN coalesce(r.indexPending, false) AS p", Map.of("id", id))
+                .map(r -> Boolean.TRUE.equals(r.get("p"))).orElse(false);
+    }
+
     public Run get(String id) {
         return find(id).orElseThrow(() -> new NotFoundException("Ingestion run " + id + " does not exist"));
     }

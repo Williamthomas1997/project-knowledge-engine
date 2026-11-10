@@ -218,7 +218,7 @@ retracted: relationships it no longer produces are invalidated with history. Ren
 
 ## 8. Retrieval and context generation (ADR-005, refined by ADR-007 §7)
 
-> ADR-007 §7 is binding from M4: search the `CollectionCatalog` first to choose collections, search them
+> Implemented in M4 (ADR-014). ADR-007 §7 is binding from M4: search the `CollectionCatalog` first to choose collections, search them
 > (vector + fulltext, currently valid), expand from the hits with **parameterised query templates** (journey,
 > impact, implementation trace, requirement trace, shared logic, log trail) and fall back to guarded,
 > read-only LLM-written Cypher only when no template fits. The original sketch follows.
@@ -341,8 +341,8 @@ Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-P
 | **M1** | Foundation: schema registry, single graph writer, history in one transaction, REST | done |
 | **M2** | Deterministic ingestion: documents, Java code, Git, journeys (Postman / Java tests / Gatling / JMeter), routes, demo corpus | done |
 | **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | done (ADR-013) |
-| **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | next |
-| **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | |
+| **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | done (ADR-014) |
+| **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | next |
 | **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | |
 | **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |
 

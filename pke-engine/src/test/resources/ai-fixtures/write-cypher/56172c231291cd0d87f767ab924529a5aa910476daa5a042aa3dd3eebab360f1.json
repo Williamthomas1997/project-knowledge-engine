@@ -1,0 +1,44 @@
+{
+  "skill": "write-cypher",
+  "skillVersion": "1.0.0",
+  "inputHash": "56172c231291cd0d87f767ab924529a5aa910476daa5a042aa3dd3eebab360f1",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 960,
+  "tokensOut": 44,
+  "input": {
+    "question": "Remove the Kafka topics the transfer service publishes to.",
+    "seeds": [
+      {
+        "type": "JavaMethod",
+        "id": "850b065f-17d0-54d2-b081-5fdb6bc204df",
+        "label": "TransferEventPublisher#publishExecuted(String)"
+      },
+      {
+        "type": "JavaMethod",
+        "id": "15209ccd-3735-5225-8195-9504486ebe53",
+        "label": "TransferEventPublisher#TransferEventPublisher(KafkaTemplate)"
+      },
+      {
+        "type": "JavaMethod",
+        "id": "5dd06356-75d6-56a6-8cb4-e4e1399486e2",
+        "label": "TransferService#execute(ExecuteRequest)"
+      }
+    ],
+    "schema": [
+      "Relationship type PUBLISHES_TO (category technical): The method sends messages to the Kafka topic. From JavaMethod to KafkaTopic. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Relationship type CONSUMES_FROM (category technical): The method listens to the Kafka topic. From JavaMethod to KafkaTopic. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Relationship type CALLS (category technical): The source method invokes the target method (static call resolution). From JavaMethod to JavaMethod. Properties: callCount, resolution. Query hints: {direction=out, weight=0.6}.",
+      "Relationship type DECLARES (category technical): The type declares the method or constructor. From JavaClass to JavaMethod. Properties: . Query hints: {direction=out, weight=0.4}.",
+      "Relationship type WRITES_TO (category technical): The method writes the table (through a JPA repository). From JavaMethod to DatabaseTable. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Relationship type LOGS (category technical): The method emits the log statement; order is its position in the method. From JavaMethod to LogStatement. Properties: order. Query hints: {direction=out, weight=0.3}.",
+      "Relationship type USES_CONFIGURATION (category technical): The code reads the configuration key or binds the prefix. From JavaClass|JavaMethod to ConfigProperty. Properties: . Query hints: {direction=out, weight=0.5}.",
+      "Relationship type INJECTS (category technical): The type receives the other type by dependency injection. From JavaClass to JavaClass. Properties: via. Query hints: {direction=out, weight=0.6}."
+    ]
+  },
+  "response": {
+    "cypher": "MATCH (m:JavaMethod)-[:PUBLISHES_TO]->(t:KafkaTopic) WHERE m.pke_id IN $seedIds DETACH DELETE t",
+    "explanation": "Deletes the topics (a write the guard must refuse)."
+  }
+}

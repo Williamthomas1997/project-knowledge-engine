@@ -1,0 +1,23 @@
+kind: QueryTemplate
+id: implementation-of-requirement
+version: 1.0.0
+description: >-
+  The code that implements a requirement or business rule (IMPLEMENTED_BY, AI-inferred with evidence), the APIs reaching it and the methods it calls.
+intents: ["implementation"]
+keywords: ["implement", "implemented", "implementation", "code", "where", "which method", "requirement"]
+seedTypes: ["KnowledgeCard", "BusinessRequirement"]
+default: true
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (seed:Entity {pke_id: $seedId})-[r:IMPLEMENTED_BY]->(impl:Entity)
+  OPTIONAL MATCH (api:ApiOperation)-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*0..2]->(impl)
+  OPTIONAL MATCH (impl)-[:CALLS]->(callee:JavaMethod)
+  UNWIND [
+    {id: r.pke_relId, kind: 'RELATIONSHIP', type: 'IMPLEMENTED_BY', label: 'implemented by ' + coalesce(impl.signature, impl.pathTemplate, impl.fqcn), detail: coalesce(r.rationale, ''), depth: 1},
+    {id: impl.pke_id, kind: 'ENTITY', type: impl.pke_type, label: coalesce(impl.fqcn + '#' + impl.signature, impl.httpMethod + ' ' + impl.pathTemplate, impl.fqcn), detail: '', depth: 1},
+    {id: api.pke_id, kind: 'ENTITY', type: 'ApiOperation', label: api.httpMethod + ' ' + api.pathTemplate, detail: 'reaches the implementation', depth: 2},
+    {id: callee.pke_id, kind: 'ENTITY', type: 'JavaMethod', label: callee.fqcn + '#' + callee.signature, detail: 'called by the implementation', depth: 2}
+  ] AS row
+  WITH row WHERE row.id IS NOT NULL
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

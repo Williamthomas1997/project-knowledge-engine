@@ -1,4 +1,4 @@
-# REST API (M3)
+# REST API (M4)
 
 Base URL `http://localhost:8080`. JSON unless stated. Errors are RFC 9457 problem details. Validation errors list
 every problem in `violations: [{path, message}]`.
@@ -121,3 +121,27 @@ returns `UNCHANGED` and writes nothing.
 
 `GET /api/entities/{id}` now also returns `status` (`CURRENT`/`INVALID`), `invalidAt` and `invalidationReason`;
 `POST /api/knowledge/changes` accepts `entityInvalidations: [{entityId, reason?, invalidAt?, evidence?}]`.
+
+## Retrieval and context (M4)
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/retrieval/search` | `{query, k?, types?, collections?, asOfSeq?, includeInvalid?, mmr?, generation?}`: hybrid search (catalog routing, vector + fulltext, RRF, optional MMR). Hits: `ENTITY` or `SECTION` with `type`, `label`, `score`, `sources` (e.g. `vector:KnowledgeCard_text`, `fulltext:entity`); `warnings` when the vector store is unavailable |
+| `POST /api/context` | `{task, budgetTokens? (2000), depth? (2), seeds? (5)}`: task context in four sections (`verified`, `deterministic`, `inferred`, `conflicts`), each item with citations `source@version#location`; `usedTokens`, `truncated`, `templates`, `fallbackCypher`, `markdown` |
+| `GET /api/entities/{id}/neighbourhood?depth=1&limit=50` | Entities and current relationships around one entity |
+| `GET /api/retrieval/templates` · `POST /api/retrieval/templates/{id}/run` | Query templates; run one from `{seedId, limit?}` (read-only, guarded) |
+| `POST /api/eval/runs` · `GET /api/eval/datasets` | `{dataset?, generation?}`: runs the evaluation datasets against the current graph; recall@k, precision@k, MRR, nDCG, context recall, graph completeness, citation correctness, source coverage, latency, tokens |
+
+## Index and synchronisation (M4)
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/sync/status` | Sources not processed or changed since their last success, entities with only obsolete evidence, index state per collection (expected vs indexed, open tasks), unfinished runs and pipelines, schema migrations awaiting, open questions (MASTER_SPEC §19.4) |
+| `POST /api/sync/reconcile` | Compares graph and vector store; enqueues missing records, deletes orphans |
+| `POST /api/sync/retry-failed` | FAILED index tasks become PENDING again |
+| `GET /api/vector/collections` | Collections with their generations |
+| `GET /api/embeddings/generations` · `POST /api/embeddings/generations?wait=` | Generations; `{model?}` (`hashing-<dims>` or `spring-ai`) builds a new one in the background (no knowledge events) |
+| `POST /api/embeddings/generations/{id}/activate?force=` | Evaluates a READY generation against the active one; switches only if not worse (or `force`) |
+
+Ingestion runs and pipeline executions end `PARTIAL` with `indexPending: true` when their vector index tasks are still
+open; the index worker completes them.

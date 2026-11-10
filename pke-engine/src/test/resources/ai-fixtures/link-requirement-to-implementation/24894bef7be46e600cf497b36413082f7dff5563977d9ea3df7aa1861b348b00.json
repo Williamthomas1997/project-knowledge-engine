@@ -1,0 +1,83 @@
+{
+  "skill": "link-requirement-to-implementation",
+  "skillVersion": "1.0.0",
+  "inputHash": "24894bef7be46e600cf497b36413082f7dff5563977d9ea3df7aa1861b348b00",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1002,
+  "tokensOut": 35,
+  "input": {
+    "requirement": {
+      "text": "An international transfer is rejected with error 003040 when the beneficiary currency is not supported for the destination country.",
+      "kind": "rule",
+      "requirementId": "FR-1",
+      "keyTerms": [
+        "beneficiary currency",
+        "currency validation",
+        "destination country",
+        "003040",
+        "FR-1"
+      ]
+    },
+    "candidates": [
+      {
+        "detail": "com.demo.transfer.TransferService; throws 003040",
+        "type": "JavaMethod",
+        "ref": "I1",
+        "label": "TransferService#validateCurrency(String)"
+      },
+      {
+        "detail": "com.demo.transfer.BeneficiaryRepository",
+        "type": "JavaMethod",
+        "ref": "I2",
+        "label": "BeneficiaryRepository#findByBuid(String)"
+      },
+      {
+        "detail": "com.demo.transfer.CurrencyConverter",
+        "type": "JavaMethod",
+        "ref": "I3",
+        "label": "CurrencyConverter#CurrencyConverter(FxRateClient)"
+      },
+      {
+        "detail": "com.demo.transfer.CurrencyConverter",
+        "type": "JavaMethod",
+        "ref": "I4",
+        "label": "CurrencyConverter#convert(BigDecimal,String,String)"
+      },
+      {
+        "detail": "com.demo.transfer.CurrencyConverter",
+        "type": "JavaMethod",
+        "ref": "I5",
+        "label": "CurrencyConverter#isSupported(String)"
+      },
+      {
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)",
+        "type": "ApiOperation",
+        "ref": "I6",
+        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferController",
+        "type": "JavaMethod",
+        "ref": "I7",
+        "label": "TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "detail": "com.demo.transfer.TransferService; throws 003041",
+        "type": "JavaMethod",
+        "ref": "I8",
+        "label": "TransferService#validate(TransferRequest)"
+      }
+    ]
+  },
+  "response": {
+    "links": [
+      {
+        "candidate": "I1",
+        "rationale": "Throws 003040 when the converter does not support the beneficiary currency.",
+        "confidence": 0.9
+      }
+    ]
+  }
+}

@@ -20,6 +20,7 @@ public final class ChangeEventTypes {
     public static final String SOURCE_REGISTERED = "SOURCE_REGISTERED";
     public static final String DOCUMENT_VERSION_ADDED = "DOCUMENT_VERSION_ADDED";
     public static final String COMMITS_RECORDED = "COMMITS_RECORDED";
+    public static final String EXPORT_VERSION_RECORDED = "EXPORT_VERSION_RECORDED";
     public static final String SECTIONS_REPARSED = "SECTIONS_REPARSED";
     public static final String SOURCE_REMOVED = "SOURCE_REMOVED";
 

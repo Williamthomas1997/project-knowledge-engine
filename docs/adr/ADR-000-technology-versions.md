@@ -21,7 +21,7 @@ dependencies yet.
 | Spring AI | 2.0.2 | `spring-ai-bom` import | Latest GA; **built against Boot 4.1.2** | `spring-ai-autoconfigure-model-openai-2.0.2.pom` declares Boot starters at `4.1.2` |
 | Neo4j Java driver | 6.1.0 | Boot BOM | Managed by Boot 4.1.2 | `spring-boot-dependencies-4.1.2.pom` → `neo4j-java-driver.version` |
 | Spring Data Neo4j | via Boot BOM | Boot BOM | Only `Neo4jClient` is used (ADR-001) | Same BOM |
-| Testcontainers | 2.0.5 (`testcontainers-neo4j`, `testcontainers-junit-jupiter`) | Boot BOM | Managed by Boot; 2.x artifact names | `spring-boot-dependencies-4.1.2.pom` → `testcontainers.version` |
+| Testcontainers | 2.0.5 (`testcontainers-neo4j`, `testcontainers-junit-jupiter`, `testcontainers-qdrant`) | Boot BOM | Managed by Boot; 2.x artifact names | `spring-boot-dependencies-4.1.2.pom` → `testcontainers.version` |
 | JUnit Jupiter | 6.0.3 | Boot BOM | Managed by Boot | Same BOM |
 | Neo4j server (tests, compose) | `neo4j:2026.10.1-community` | `neo4j.test.image` property | Newest stable Docker tag; well above the 5.26 minimum for dynamic labels/types | Docker Hub tag list; `Neo4jDynamicLabelIT` passes against it |
 | Neo4j server (Desktop) | Enterprise 2026.09.0 | local install | Already installed; supports `CREATE DATABASE` for a separate `pketest` DB | `~/.Neo4jDesktop2/Cache/dbmss` |
@@ -34,6 +34,9 @@ dependencies yet.
 | swagger-parser v3 | 2.1.48 | explicit, unused until M2 | Latest stable | Maven Central metadata |
 | JSqlParser | 5.4 | pinned only, **not used** | M2 needed only `INSERT ... VALUES` rows from error-config and route scripts; a small quote-aware reader (`SqlInserts`) handles them, including Oracle/Postgres quoting | — |
 | `tools.jackson.dataformat:jackson-dataformat-yaml` | 3.1.7 | Boot BOM | Parses YAML schema definitions with Boot's Jackson 3 | Boot BOM |
+| Spring AI vector stores (`spring-ai-neo4j-store`, `spring-ai-qdrant-store`) | 2.0.2 | `spring-ai-bom` | M4 vector adapters (ADR-014); store modules only, no auto-configuration | `Neo4jVectorStoreContractIT`, `QdrantVectorStoreContractIT` |
+| Qdrant Java client (`io.qdrant:client`, gRPC) | 1.18.0 | via `spring-ai-qdrant-store` | Managed by Spring AI | Same contract tests |
+| Qdrant server (tests) | `qdrant/qdrant:v1.18.0` | Testcontainers | Matches the client's minor version | `QdrantVectorStoreContractIT` |
 | Maven | 3.9.11 (wrapper) | `.mvn/wrapper` | Matches the installed Maven | `mvn -v` |
 
 ## Spring AI model switches (verified in bytecode)

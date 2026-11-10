@@ -1,0 +1,24 @@
+kind: QueryTemplate
+id: journey-of-api
+version: 1.0.0
+description: >-
+  User journeys whose steps call this API (gateway or service layer; layers are joined through their shared handler method), with the steps in order.
+intents: ["journey", "flow"]
+keywords: ["journey", "journeys", "flow", "step", "steps", "sequence", "user"]
+seedTypes: ["ApiOperation"]
+default: true
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (seed:ApiOperation {pke_id: $seedId})
+  OPTIONAL MATCH (seed)-[:HANDLED_BY]->(:JavaMethod)<-[:HANDLED_BY]-(other:ApiOperation)
+  WITH seed, [seed] + collect(DISTINCT other) AS apis
+  UNWIND apis AS api
+  MATCH (j:UserJourney)-[h:HAS_STEP]->(step:JourneyStep)-[c:CALLS_API]->(api)
+  WITH j, step, api, h, c ORDER BY j.journeyKey, step.order
+  UNWIND [
+    {id: j.pke_id, kind: 'ENTITY', type: 'UserJourney', label: j.journeyKey, detail: coalesce(j.name, ''), depth: 1},
+    {id: h.pke_relId, kind: 'RELATIONSHIP', type: 'HAS_STEP', label: j.journeyKey + ' step ' + step.order, detail: '', depth: 1},
+    {id: c.pke_relId, kind: 'RELATIONSHIP', type: 'CALLS_API', label: j.journeyKey + ' step ' + step.order + ' calls ' + api.httpMethod + ' ' + api.pathTemplate, detail: api.layer, depth: 1}
+  ] AS row
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

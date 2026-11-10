@@ -71,10 +71,28 @@ class ArchitectureTest {
             .because("the kernel holds shared value types and must stay at the bottom of the dependency graph");
 
     @ArchTest
-    static final ArchRule onlyTheAiPackageUsesSpringAi = noClasses()
-            .that().resideOutsideOfPackage(ENGINE + ".ai..")
+    static final ArchRule onlyAdaptersUseSpringAi = noClasses()
+            .that().resideOutsideOfPackages(ENGINE + ".ai..", ENGINE + ".vectorstore..", GRAPH + "..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.ai..")
-            .because("skills and pipelines use the provider-neutral ChatPort/EmbeddingPort (ADR-013)");
+            .because("skills, pipelines and retrieval use the provider-neutral ports (ADR-013, ADR-014)");
+
+    @ArchTest
+    static final ArchRule noNeo4jTypeOutsideTheGraphAdapter = noClasses()
+            .that().resideOutsideOfPackage(GRAPH + "..")
+            .should().dependOnClassesThat().resideInAnyPackage("org.neo4j..")
+            .because("Neo4j is one adapter of the GraphStore and VectorStorePort ports (ADR-014)");
+
+    @ArchTest
+    static final ArchRule writesGoThroughTheGraphStorePort = noClasses()
+            .that().resideOutsideOfPackage(GRAPH + "..")
+            .should().dependOnClassesThat().haveFullyQualifiedName(GRAPH + ".KnowledgeWriter")
+            .because("knowledge is written through the GraphStore port; KnowledgeWriter is the Neo4j adapter's internals");
+
+    @ArchTest
+    static final ArchRule portsDoNotDependOnAdapters = noClasses()
+            .that().resideInAnyPackage(ENGINE + ".store..", ENGINE + ".vectorstore..")
+            .should().dependOnClassesThat().resideInAnyPackage(GRAPH + "..", ENGINE + ".index..", ENGINE + ".retrieval..")
+            .because("ports and their non-Neo4j adapters must not depend on the Neo4j adapter or on their users");
 
     @ArchTest
     static final ArchRule kernelIsFrameworkFree = noClasses()

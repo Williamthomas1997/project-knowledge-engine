@@ -1,11 +1,11 @@
-package com.omnicore.pke.engine.graph;
+package com.omnicore.pke.engine.store;
 
 import com.omnicore.pke.engine.kernel.EpistemicStatus;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The write model accepted by {@link KnowledgeWriter}: one {@link ChangeSet} is applied in one transaction.
+ * The write model accepted by {@link GraphStore}: one {@link ChangeSet} is applied in one transaction.
  * An entity or relationship write states the <em>full current</em> domain properties; properties left out are
  * removed. History keeps the previous values.
  */

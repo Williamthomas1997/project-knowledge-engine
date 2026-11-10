@@ -38,7 +38,7 @@ public class PipelineExecutionStore {
     public record ExecutionView(String id, String pipelineId, String pipelineVersion, String status, String inputJson,
                                 String idempotencyKey, String actor, String errorClass, String error,
                                 boolean cancelRequested, Object createdAt, Object startedAt, Object finishedAt,
-                                List<StepView> steps) {
+                                boolean indexPending, List<StepView> steps) {
     }
 
     public String create(String pipelineId, String pipelineVersion, String inputJson, String idempotencyKey,
@@ -141,7 +141,7 @@ public class PipelineExecutionStore {
                 (String) e.get("status"), (String) e.get("inputJson"), (String) e.get("idempotencyKey"),
                 (String) e.get("actor"), (String) e.get("errorClass"), (String) e.get("error"),
                 Boolean.TRUE.equals(e.get("cancelRequested")), e.get("createdAt"), e.get("startedAt"), e.get("finishedAt"),
-                steps.stream().filter(s -> s.get("stepId") != null).map(s -> new StepView((String) s.get("stepId"),
+                Boolean.TRUE.equals(e.get("indexPending")), steps.stream().filter(s -> s.get("stepId") != null).map(s -> new StepView((String) s.get("stepId"),
                         (String) s.get("uses"), ((Number) s.get("order")).intValue(), (String) s.get("status"),
                         ((Number) s.getOrDefault("attempts", 0L)).intValue(), (String) s.get("errorClass"),
                         (String) s.get("error"), (String) s.get("outputJson"), s.get("startedAt"), s.get("finishedAt")))

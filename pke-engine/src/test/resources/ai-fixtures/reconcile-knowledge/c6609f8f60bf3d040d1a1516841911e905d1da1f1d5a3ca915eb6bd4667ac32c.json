@@ -1,7 +1,7 @@
 {
   "skill": "reconcile-knowledge",
   "skillVersion": "1.0.0",
-  "inputHash": "3e44ce80f46942cdc3cdcce8bb67488e70d1d4d775eb27ba173a6a469319de01",
+  "inputHash": "c6609f8f60bf3d040d1a1516841911e905d1da1f1d5a3ca915eb6bd4667ac32c",
   "provider": "fixture",
   "model": "hand-authored",
   "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
@@ -93,17 +93,17 @@
       },
       {
         "ref": "E6",
-        "text": "After a successful validation and OTP check, the system executes the international transfer, stores it and publishes a transfer-executed event.",
-        "kind": "requirement",
-        "requirementId": "FR-3",
+        "text": "Customers send money to beneficiaries abroad from the mobile app with an international transfer.",
+        "kind": "definition",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,
         "humanVerified": false
       },
       {
         "ref": "E7",
-        "text": "Error 003040 means the beneficiary currency is not supported.",
-        "kind": "definition",
+        "text": "After a successful validation and OTP check, the system executes the international transfer, stores it and publishes a transfer-executed event.",
+        "kind": "requirement",
+        "requirementId": "FR-3",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,
         "humanVerified": false
@@ -126,7 +126,7 @@
       },
       {
         "ref": "E10",
-        "text": "Customers send money to beneficiaries abroad from the mobile app with an international transfer.",
+        "text": "Error 003040 means the beneficiary currency is not supported.",
         "kind": "definition",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,

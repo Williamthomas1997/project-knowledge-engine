@@ -1,0 +1,26 @@
+kind: QueryTemplate
+id: apis-in-journey
+version: 1.0.0
+description: >-
+  The APIs a user journey calls, step by step, with the handler method of each API.
+intents: ["journey", "apis"]
+keywords: ["api", "apis", "endpoint", "endpoints", "call", "calls", "journey", "flow"]
+seedTypes: ["UserJourney", "JourneyStep"]
+default: true
+parameters: { seedId: { required: true }, limit: { default: 50, max: 200 } }
+cypher: |
+  MATCH (seed:Entity {pke_id: $seedId})
+  OPTIONAL MATCH (seed)<-[:HAS_STEP]-(parent:UserJourney)
+  WITH coalesce(parent, seed) AS j
+  MATCH (j:UserJourney)-[h:HAS_STEP]->(step:JourneyStep)-[c:CALLS_API]->(api:ApiOperation)
+  OPTIONAL MATCH (api)-[hb:HANDLED_BY]->(m:JavaMethod)
+  WITH j, step, h, c, api, hb, m ORDER BY step.order
+  UNWIND [
+    {id: c.pke_relId, kind: 'RELATIONSHIP', type: 'CALLS_API', label: 'step ' + step.order + ' calls ' + api.httpMethod + ' ' + api.pathTemplate, detail: j.journeyKey, depth: 1},
+    {id: api.pke_id, kind: 'ENTITY', type: 'ApiOperation', label: api.httpMethod + ' ' + api.pathTemplate, detail: api.layer, depth: 1},
+    {id: hb.pke_relId, kind: 'RELATIONSHIP', type: 'HANDLED_BY', label: api.pathTemplate + ' handled by ' + m.signature, detail: '', depth: 2},
+    {id: m.pke_id, kind: 'ENTITY', type: 'JavaMethod', label: m.fqcn + '#' + m.signature, detail: '', depth: 2}
+  ] AS row
+  WITH row WHERE row.id IS NOT NULL
+  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  LIMIT $limit

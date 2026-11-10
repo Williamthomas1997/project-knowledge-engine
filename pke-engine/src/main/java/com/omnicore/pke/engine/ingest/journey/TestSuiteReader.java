@@ -1,8 +1,8 @@
 package com.omnicore.pke.engine.ingest.journey;
 
 import com.omnicore.pke.engine.extract.ExtractedKnowledge;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
 import com.omnicore.pke.spi.journey.JourneyDefinition;
 import java.nio.file.Path;
 import java.util.ArrayList;

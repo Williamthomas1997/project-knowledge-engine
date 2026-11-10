@@ -8,6 +8,80 @@
   "tokensIn": 1191,
   "tokensOut": 37,
   "input": {
+    "candidates": [
+      {
+        "label": "TransferService#validate(TransferRequest)",
+        "ref": "I1",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService; throws 003041"
+      },
+      {
+        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)",
+        "ref": "I2",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)"
+      },
+      {
+        "label": "POST /api/v3/international-transfers/execute (service, transfer-service)",
+        "ref": "I3",
+        "type": "ApiOperation",
+        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)"
+      },
+      {
+        "label": "TransferController#TransferController(TransferService)",
+        "ref": "I4",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#execute(ExecuteRequest)",
+        "ref": "I5",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#ftAccounts(AccountsRequest)",
+        "ref": "I6",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferController#validate(TransferRequest,String)",
+        "ref": "I7",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferController"
+      },
+      {
+        "label": "TransferEventPublisher#TransferEventPublisher(KafkaTemplate)",
+        "ref": "I8",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferEventPublisher"
+      },
+      {
+        "label": "TransferEventPublisher#publishExecuted(String)",
+        "ref": "I9",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferEventPublisher"
+      },
+      {
+        "label": "TransferService#accounts(AccountsRequest)",
+        "ref": "I10",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService"
+      },
+      {
+        "label": "TransferService#execute(ExecuteRequest)",
+        "ref": "I11",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService"
+      },
+      {
+        "label": "TransferService#validateCurrency(String)",
+        "ref": "I12",
+        "type": "JavaMethod",
+        "detail": "com.demo.transfer.TransferService; throws 003040"
+      }
+    ],
     "requirement": {
       "text": "An international transfer is rejected with error 003041 when its amount, converted to QAR, exceeds the customer's daily limit.",
       "kind": "rule",
@@ -19,81 +93,7 @@
         "003041",
         "FR-2"
       ]
-    },
-    "candidates": [
-      {
-        "detail": "com.demo.transfer.TransferService; throws 003041",
-        "type": "JavaMethod",
-        "ref": "I1",
-        "label": "TransferService#validate(TransferRequest)"
-      },
-      {
-        "detail": "handled by com.demo.transfer.TransferController#validate(TransferRequest,String)",
-        "type": "ApiOperation",
-        "ref": "I2",
-        "label": "POST /api/v2/international-transfers/validation (service, transfer-service)"
-      },
-      {
-        "detail": "handled by com.demo.transfer.TransferController#execute(ExecuteRequest)",
-        "type": "ApiOperation",
-        "ref": "I3",
-        "label": "POST /api/v3/international-transfers/execute (service, transfer-service)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferController",
-        "type": "JavaMethod",
-        "ref": "I4",
-        "label": "TransferController#TransferController(TransferService)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferController",
-        "type": "JavaMethod",
-        "ref": "I5",
-        "label": "TransferController#execute(ExecuteRequest)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferController",
-        "type": "JavaMethod",
-        "ref": "I6",
-        "label": "TransferController#ftAccounts(AccountsRequest)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferController",
-        "type": "JavaMethod",
-        "ref": "I7",
-        "label": "TransferController#validate(TransferRequest,String)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferEventPublisher",
-        "type": "JavaMethod",
-        "ref": "I8",
-        "label": "TransferEventPublisher#TransferEventPublisher(KafkaTemplate)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferEventPublisher",
-        "type": "JavaMethod",
-        "ref": "I9",
-        "label": "TransferEventPublisher#publishExecuted(String)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferService",
-        "type": "JavaMethod",
-        "ref": "I10",
-        "label": "TransferService#accounts(AccountsRequest)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferService",
-        "type": "JavaMethod",
-        "ref": "I11",
-        "label": "TransferService#execute(ExecuteRequest)"
-      },
-      {
-        "detail": "com.demo.transfer.TransferService; throws 003040",
-        "type": "JavaMethod",
-        "ref": "I12",
-        "label": "TransferService#validateCurrency(String)"
-      }
-    ]
+    }
   },
   "response": {
     "links": [

@@ -1,6 +1,7 @@
 package com.omnicore.pke.engine.ingest;
 
 import com.omnicore.pke.engine.graph.IngestionRunStore;
+import com.omnicore.pke.engine.index.OperationIndexing;
 import com.omnicore.pke.engine.graph.IngestionRunStore.Run;
 import com.omnicore.pke.engine.graph.IngestionRunStore.Status;
 import com.omnicore.pke.engine.graph.SourceQueryService;
@@ -34,6 +35,7 @@ public class IngestionRunService {
     private final RepositoryIngestionService repositories;
     private final RouteResolutionService routes;
     private final SourceQueryService sources;
+    private final OperationIndexing indexing;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "pke-ingestion");
         t.setDaemon(true);
@@ -41,7 +43,8 @@ public class IngestionRunService {
     });
 
     public IngestionRunService(IngestionRunStore runs, RepositoryIngestionService repositories, RouteResolutionService routes,
-                               SourceQueryService sources) {
+                               SourceQueryService sources, OperationIndexing indexing) {
+        this.indexing = indexing;
         this.runs = runs;
         this.repositories = repositories;
         this.routes = routes;
@@ -132,7 +135,13 @@ public class IngestionRunService {
                 unresolved = routeReport.unmatched().stream().map(u -> "route: " + u).toList();
                 status = routeReport.stats().failures().isEmpty() ? Status.COMPLETED : Status.PARTIAL;
             }
+            long openIndexTasks = indexing.await(run.id());
+            stats.put("openIndexTasks", openIndexTasks);
             Map<String, Object> fields = new HashMap<>();
+            if (openIndexTasks > 0 && status == Status.COMPLETED) {
+                status = Status.PARTIAL;
+                fields.put("indexPending", true);
+            }
             fields.put("status", status.name());
             fields.put("finishedAt", OffsetDateTime.now());
             fields.put("fromVersion", from);

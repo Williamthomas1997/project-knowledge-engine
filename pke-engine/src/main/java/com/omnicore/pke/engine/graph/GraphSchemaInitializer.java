@@ -56,7 +56,16 @@ public class GraphSchemaInitializer implements ApplicationRunner {
             "CREATE INDEX pke_pipeline_execution_key IF NOT EXISTS FOR (n:PipelineExecution) ON (n.idempotencyKey)",
             "CREATE INDEX pke_model_call_execution IF NOT EXISTS FOR (n:ModelCall) ON (n.executionId)",
             "CREATE INDEX pke_open_question_status IF NOT EXISTS FOR (n:OpenQuestion) ON (n.status)",
-            "CREATE FULLTEXT INDEX pke_card_text IF NOT EXISTS FOR (n:KnowledgeCard) ON EACH [n.text]");
+            "CREATE FULLTEXT INDEX pke_card_text IF NOT EXISTS FOR (n:KnowledgeCard) ON EACH [n.text]",
+            // M4: vector outbox, generations and collections, entity keyword search
+            "CREATE CONSTRAINT pke_index_task_id IF NOT EXISTS FOR (n:IndexTask) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_embedding_generation_id IF NOT EXISTS FOR (n:EmbeddingGeneration) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_vector_collection_name IF NOT EXISTS FOR (n:VectorCollection) REQUIRE n.name IS UNIQUE",
+            "CREATE CONSTRAINT pke_eval_run_id IF NOT EXISTS FOR (n:EvalRun) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE INDEX pke_index_task_status IF NOT EXISTS FOR (n:IndexTask) ON (n.status, n.nextAttemptAt)",
+            "CREATE INDEX pke_index_task_operation IF NOT EXISTS FOR (n:IndexTask) ON (n.operationId)",
+            "CREATE FULLTEXT INDEX pke_entity_search IF NOT EXISTS FOR (n:Entity) ON EACH [n.pke_searchText] "
+                    + "OPTIONS {indexConfig: {`fulltext.analyzer`: 'english'}}");
 
     private final GraphSessions sessions;
 

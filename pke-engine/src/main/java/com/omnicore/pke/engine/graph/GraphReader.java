@@ -3,7 +3,9 @@ package com.omnicore.pke.engine.graph;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Duration;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.TransactionConfig;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,6 +25,17 @@ public class GraphReader {
     public List<Map<String, Object>> query(String cypher, Map<String, Object> parameters) {
         try (Session session = sessions.read()) {
             return session.executeRead(tx -> tx.run(cypher, parameters).list(r -> r.asMap()));
+        }
+    }
+
+    /**
+     * Runs a read query with a server-side timeout: the transaction is terminated when it runs longer
+     * (used for guarded, LLM-written Cypher and query templates).
+     */
+    public List<Map<String, Object>> query(String cypher, Map<String, Object> parameters, Duration timeout) {
+        try (Session session = sessions.read()) {
+            return session.executeRead(tx -> tx.run(cypher, parameters).list(r -> r.asMap()),
+                    TransactionConfig.builder().withTimeout(timeout).build());
         }
     }
 

@@ -1,0 +1,34 @@
+{
+  "skill": "write-cypher",
+  "skillVersion": "1.0.0",
+  "inputHash": "2010b2a0cfbf68963579335fe96a57924fad55441e09ab409217578a7b7d4e3a",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1026,
+  "tokensOut": 72,
+  "input": {
+    "question": "Which Kafka topics does the transfer service publish to?",
+    "seeds": [
+      {
+        "id": "850b065f-17d0-54d2-b081-5fdb6bc204df",
+        "label": "TransferEventPublisher#publishExecuted(String)",
+        "type": "JavaMethod"
+      }
+    ],
+    "schema": [
+      "Relationship type PUBLISHES_TO (category technical): The method sends messages to the Kafka topic. From JavaMethod to KafkaTopic. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Relationship type CONSUMES_FROM (category technical): The method listens to the Kafka topic. From JavaMethod to KafkaTopic. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Entity type KafkaTopic (label :KafkaTopic, category technical): A Kafka topic, by name as written in code (placeholders kept as written). Properties: name, placeholder. Outgoing: RELATED_TO->*, TESTED_BY->TestCase. Incoming: JavaMethod-CONSUMES_FROM->, JavaMethod-PUBLISHES_TO->.",
+      "Relationship type DECLARES (category technical): The type declares the method or constructor. From JavaClass to JavaMethod. Properties: . Query hints: {direction=out, weight=0.4}.",
+      "Relationship type CALLS (category technical): The source method invokes the target method (static call resolution). From JavaMethod to JavaMethod. Properties: callCount, resolution. Query hints: {direction=out, weight=0.6}.",
+      "Relationship type WRITES_TO (category technical): The method writes the table (through a JPA repository). From JavaMethod to DatabaseTable. Properties: . Query hints: {direction=out, weight=0.7}.",
+      "Relationship type LOGS (category technical): The method emits the log statement; order is its position in the method. From JavaMethod to LogStatement. Properties: order. Query hints: {direction=out, weight=0.3}.",
+      "Entity type JavaMethod (label :JavaMethod, category technical): A method or constructor, identified by repository, declaring type and erased signature. Properties: repository, fqcn, signature, summary, lineStart, lineEnd, returnType, annotations, bodyHash, unresolvedCalls, test. Outgoing: CALLS->JavaMethod, CONSUMES_FROM->KafkaTopic, IMPLEMENTS_REQUIREMENT->BusinessRequirement, LOGS->LogStatement, PUBLISHES_TO->KafkaTopic, READS_FROM->DatabaseTable, RELATED_TO->*, TESTED_BY->TestCase, THROWS_ERROR->ErrorCode, USES_CONFIGURATION->ConfigProperty, WRITES_TO->DatabaseTable. Incoming: JavaMethod-CALLS->, JavaClass-DECLARES->, ApiOperation-HANDLED_BY->, KnowledgeCard|BusinessRequirement-IMPLEMENTED_BY->."
+    ]
+  },
+  "response": {
+    "cypher": "MATCH (m:JavaMethod)-[:PUBLISHES_TO]->(t:KafkaTopic) WHERE m.pke_id IN $seedIds RETURN DISTINCT t.pke_id AS id, 'KafkaTopic' AS type, t.name AS label, m.signature AS detail LIMIT 50",
+    "explanation": "Kafka topics that the seed methods publish to, with the publishing method."
+  }
+}

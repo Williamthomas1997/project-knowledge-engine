@@ -1,11 +1,11 @@
 {
   "skill": "reconcile-knowledge",
   "skillVersion": "1.0.0",
-  "inputHash": "f29c0fbdbad5e5771f476e8e0e06d445b243e6feacc8d3baa41c723749413c1b",
+  "inputHash": "58bd58edec6393b35846567c2b6934b9fa3be0564e80217b8f760304d7db8299",
   "provider": "fixture",
   "model": "hand-authored",
   "recordedWith": "hand-authored for M3 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
-  "tokensIn": 1378,
+  "tokensIn": 1399,
   "tokensOut": 96,
   "input": {
     "document": {
@@ -52,25 +52,25 @@
       },
       {
         "ref": "E3",
-        "text": "Error 003041 means the daily limit is exceeded.",
-        "kind": "definition",
+        "text": "An international transfer is rejected with error 003040 when the beneficiary currency is not supported for the destination country.",
+        "kind": "rule",
+        "requirementId": "FR-1",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,
         "humanVerified": false
       },
       {
         "ref": "E4",
-        "text": "International transfers are made from a QAR current account to a saved beneficiary.",
-        "kind": "constraint",
+        "text": "Customers send money to beneficiaries abroad from the mobile app with an international transfer.",
+        "kind": "definition",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,
         "humanVerified": false
       },
       {
         "ref": "E5",
-        "text": "Every international transfer requires a purpose code.",
-        "kind": "requirement",
-        "requirementId": "FR-4",
+        "text": "Error 003041 means the daily limit is exceeded.",
+        "kind": "definition",
         "documentKey": "doc:international-transfer-brd",
         "sameSection": false,
         "humanVerified": false

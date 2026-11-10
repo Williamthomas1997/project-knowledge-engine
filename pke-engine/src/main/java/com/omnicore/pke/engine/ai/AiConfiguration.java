@@ -5,7 +5,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,26 +36,24 @@ class AiConfiguration {
         return port;
     }
 
+    /** The default embedding model ({@code pke.embedding.model}); deterministic hashing unless configured otherwise. */
     @Bean
-    EmbeddingPort embeddingPort(AiProperties properties, ObjectProvider<EmbeddingModel> embeddingModel) {
-        EmbeddingModel model = properties.mode() == AiProperties.Mode.NONE ? null : embeddingModel.getIfAvailable();
+    EmbeddingPort embeddingPort(EmbeddingModels models) {
+        String name = models.defaultModel();
         return new EmbeddingPort() {
             @Override
             public boolean available() {
-                return model != null;
+                return true;
             }
 
             @Override
             public String describe() {
-                return model == null ? "none" : properties.provider();
+                return name;
             }
 
             @Override
             public List<float[]> embed(List<String> texts) {
-                if (model == null) {
-                    throw new AiCallException("No embedding model is configured", false, null);
-                }
-                return model.embed(texts);
+                return models.resolve(name).embed(texts);
             }
         };
     }

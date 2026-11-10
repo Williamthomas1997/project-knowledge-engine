@@ -1,17 +1,18 @@
 package com.omnicore.pke.engine.graph;
 
+import com.omnicore.pke.engine.store.KnowledgeChanges;
 import com.omnicore.pke.engine.graph.GraphTransactions.WriteContext;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeResult;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ChangeSet;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityInvalidation;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityRef;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EntityWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.EvidenceInput;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ItemOutcome;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.Outcome;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipInvalidation;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.RelationshipWrite;
-import com.omnicore.pke.engine.graph.KnowledgeChanges.ScopeRetraction;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeResult;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityInvalidation;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EntityWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ItemOutcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.Outcome;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipInvalidation;
+import com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite;
+import com.omnicore.pke.engine.store.KnowledgeChanges.ScopeRetraction;
 import com.omnicore.pke.engine.graph.PendingEvent.SubjectKind;
 import com.omnicore.pke.engine.kernel.CanonicalJson;
 import com.omnicore.pke.engine.kernel.ChangeEventTypes;
@@ -400,12 +401,14 @@ public class KnowledgeWriter {
                                       pke_propsHash: $hash, pke_epistemic: $epistemic, pke_validAt: $validAt,
                                       pke_status: 'CURRENT', pke_createdSeq: $seq, pke_updatedSeq: $seq})
                     SET n:$($label)
-                    SET n += $props""", params("id", id, "type", e.definition().name(), "label", label,
+                    SET n += $props, n.pke_searchText = $searchText""", params("id", id, "type", e.definition().name(), "label", label,
+                    "searchText", searchText(e.properties()),
                     "schemaVersion", e.definition().version(), "hash", e.hash(), "epistemic", e.epistemic().name(),
                     "validAt", e.validAt(), "seq", seq, "props", e.properties()));
             ctx.reached(WriteStage.AFTER_ENTITY);
             List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, id, evidenceRows(e.evidence(), id), seq);
             writeEntityVersion(ctx, id, e, 1, seq, e.validAt());
+            IndexTaskStore.enqueue(ctx, e.definition(), id, Map.of(), e.properties(), false, false);
             ctx.emit(new PendingEvent(seq, ChangeEventTypes.ENTITY_CREATED, SubjectKind.ENTITY, id,
                     e.definition().name(), 1L, details("hash", e.hash(), "schemaVersion", e.definition().version(),
                     "epistemic", e.epistemic().name(), "evidenceIds", evidenceIds)));
@@ -447,7 +450,8 @@ public class KnowledgeWriter {
                 SET n += $props, n.pke_version = $version, n.pke_propsHash = $hash, n.pke_epistemic = $epistemic,
                     n.pke_validAt = coalesce($validAt, n.pke_validAt), n.pke_updatedSeq = $seq,
                     n.pke_schemaVersion = $schemaVersion, n.pke_status = 'CURRENT', n.pke_invalidAt = null,
-                    n.pke_invalidationReason = null""", params("id", id, "props", props, "version", newVersion,
+                    n.pke_invalidationReason = null, n.pke_searchText = $searchText""", params("id", id, "props", props,
+                "searchText", searchText(e.properties()), "version", newVersion,
                 "hash", e.hash(), "epistemic", e.epistemic().name(), "validAt", e.validAt(), "seq", seq,
                 "schemaVersion", e.definition().version()));
         if (rename) {
@@ -460,6 +464,7 @@ public class KnowledgeWriter {
         ctx.reached(WriteStage.AFTER_ENTITY);
         List<String> evidenceIds = writeEvidence(ctx, SubjectKind.ENTITY, id, newEvidence, seq);
         writeEntityVersion(ctx, id, e, newVersion, seq, e.validAt() != null ? e.validAt() : existingValidAt);
+        IndexTaskStore.enqueue(ctx, e.definition(), id, oldProps, e.properties(), revalidate, false);
         String eventType = rename ? ChangeEventTypes.ENTITY_RENAMED
                 : revalidate ? ChangeEventTypes.ENTITY_REVALIDATED : ChangeEventTypes.ENTITY_UPDATED;
         ctx.emit(new PendingEvent(seq, eventType,
@@ -508,6 +513,8 @@ public class KnowledgeWriter {
                         "epistemic", existing.get("epistemic").asString(), "validAt", existing.get("validAt").asObject(),
                         "invalidAt", invalidAt, "schemaVersion", existing.get("schemaVersion").asString(null), "at", ctx.now()));
         ctx.reached(WriteStage.AFTER_VERSION);
+        IndexTaskStore.enqueue(ctx, validator.entityType(type, inv.path(), new ArrayList<>()), id, props, Map.of(),
+                false, true);
         ctx.emit(new PendingEvent(seq, ChangeEventTypes.ENTITY_INVALIDATED, SubjectKind.ENTITY, id, type, newVersion,
                 details("fromVersion", version, "reason", inv.reason(), "evidenceIds", evidenceIds)));
         return new ItemOutcome("ENTITY", id, type, Outcome.INVALIDATED, newVersion, seq);
@@ -804,6 +811,27 @@ public class KnowledgeWriter {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /**
+     * Keyword-search text ({@code pke_entity_search} fulltext index): every string property, plus camelCase and
+     * dotted identifiers split into words, because Lucene's analyzers keep {@code validateCurrency} as one token.
+     */
+    static String searchText(Map<String, Object> props) {
+        StringBuilder text = new StringBuilder();
+        for (Object value : new TreeMap<>(props).values()) {
+            List<?> values = value instanceof List<?> list ? list : List.of(value);
+            for (Object v : values) {
+                if (v instanceof String s && !s.isBlank()) {
+                    text.append(s).append(' ').append(s.replaceAll("([a-z0-9])([A-Z])", "$1 $2").replaceAll("[^\\p{L}\\p{N}]+", " "))
+                            .append(' ');
+                }
+            }
+            if (text.length() > 4000) {
+                break;
+            }
+        }
+        return text.length() > 4000 ? text.substring(0, 4000) : text.toString().strip();
+    }
 
     static Map<String, Object> domainProperties(Map<String, Object> all) {
         Map<String, Object> domain = new TreeMap<>();

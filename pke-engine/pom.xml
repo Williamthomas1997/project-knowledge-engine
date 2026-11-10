@@ -45,6 +45,15 @@
 
         <!-- Schema definitions: YAML parsing and JSON Schema 2020-12 validation (both on Jackson 3) -->
         <dependency>
+            <!-- Vector store adapters (ADR-014): Neo4j vector index (default) and Qdrant, no auto-configuration -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-neo4j-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-qdrant-store</artifactId>
+        </dependency>
+        <dependency>
             <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
@@ -103,6 +112,11 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-qdrant</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
@@ -117,6 +131,14 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+            </resource>
+            <!-- Evaluation datasets ship inside the jar as classpath:eval/datasets/** (POST /api/eval/runs) -->
+            <resource>
+                <directory>${project.basedir}/../eval</directory>
+                <targetPath>eval</targetPath>
+                <includes>
+                    <include>datasets/**</include>
+                </includes>
             </resource>
             <!-- Git-versioned definitions ship inside the jar as classpath:definitions/** -->
             <resource>
@@ -147,6 +169,15 @@
     </build>
 
     <profiles>
+        <!-- mvn -Peval verify: only the retrieval evaluation (EvalIT); results in pke-engine/target/eval/ -->
+        <profile>
+            <id>eval</id>
+            <properties>
+                <test>none</test>
+                <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
+                <it.test>EvalIT</it.test>
+            </properties>
+        </profile>
         <!-- mvn -Precord-ai verify (OPENAI_API_KEY set): integration tests call the real model for every request
              without a fixture and save the answer under src/test/resources/ai-fixtures. Synthetic data only. -->
         <profile>

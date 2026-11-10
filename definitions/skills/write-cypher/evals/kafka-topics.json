@@ -1,0 +1,19 @@
+{
+  "name": "A question no template covers: Kafka topics a service publishes to",
+  "input": {
+    "question": "Which Kafka topics does the payment service publish to?",
+    "seeds": [
+      {"id": "seed-1", "type": "JavaClass", "label": "com.demo.pay.PaymentEventPublisher"}
+    ],
+    "schema": [
+      "Entity type JavaClass (label :JavaClass, category technical): A Java class. Properties: repository, fqcn, kind, path. Outgoing: DECLARES->JavaMethod. Incoming: .",
+      "Entity type JavaMethod (label :JavaMethod, category technical): A method. Properties: repository, fqcn, signature. Outgoing: PUBLISHES_TO->KafkaTopic, CALLS->JavaMethod. Incoming: JavaClass-DECLARES->.",
+      "Entity type KafkaTopic (label :KafkaTopic, category technical): A Kafka topic. Properties: name, placeholder. Outgoing: . Incoming: JavaMethod-PUBLISHES_TO->."
+    ]
+  },
+  "expect": [
+    {"pointer": "/cypher", "contains": "PUBLISHES_TO"},
+    {"pointer": "/cypher", "contains": "$seedIds"},
+    {"pointer": "/cypher", "contains": "LIMIT"}
+  ]
+}
