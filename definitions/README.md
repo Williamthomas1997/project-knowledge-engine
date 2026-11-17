@@ -10,6 +10,8 @@ Git-versioned metadata the engine loads at runtime. Format and promotion rules: 
   A name + version is immutable; the highest version is active. Format and runtime: `docs/adr/ADR-013-*.md`.
 - `pipelines/*.yaml` — pipelines (`meta/pipeline.schema.json`): steps are `PipelineStep` beans or `skill:<name>`.
 - `policies/relationships.yaml` — relationship policies (`meta/relationship-policies.schema.json`).
+- `policies/execution.yaml` — execution policy per deployment profile (`meta/execution-policy.schema.json`, M6): the
+  pipelines MCP may start and the evolution-request kinds it accepts.
 - Relationship types may declare `extraction: {query, proposedBy, rationale}`: a read-only Cypher query returning
   `subjectId`, `objectId` (and optionally `evidence`) that the `populate-derived` step runs behind the Cypher guard.
   This is how a discovered type is registered and populated without Java changes (ADR-016).

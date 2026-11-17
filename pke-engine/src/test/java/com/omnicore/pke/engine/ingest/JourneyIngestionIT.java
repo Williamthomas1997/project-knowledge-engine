@@ -107,12 +107,12 @@ class JourneyIngestionIT extends KnowledgeIT {
 
     @Test
     void journeyApiOverRest() throws Exception {
-        HttpResponse<String> response = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+        HttpResponse<String> response = HttpClient.newHttpClient().send(authorized(
                 URI.create("http://localhost:" + port + "/api/journeys/international-transfer")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).contains("validate(TransferRequest,String)").contains("\"fromStep\":1");
-        HttpResponse<String> list = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+        HttpResponse<String> list = HttpClient.newHttpClient().send(authorized(
                 URI.create("http://localhost:" + port + "/api/journeys")).GET().build(), HttpResponse.BodyHandlers.ofString());
         assertThat(list.body()).contains("\"journeyKey\":\"international-transfer\"").contains("\"steps\":3");
         assertThat(count("MATCH (r:IngestionRun {status: 'COMPLETED'}) RETURN count(r)")).isEqualTo(2);

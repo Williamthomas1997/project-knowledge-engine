@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -152,5 +153,23 @@ public class SkillRegistry {
             key.append(String.format("%09d", Long.parseLong(part)));
         }
         return key.toString();
+    }
+
+    /** The skill as shown by REST and MCP; {@code full} adds schemas and instructions. */
+    public static Map<String, Object> describe(SkillDefinition s, boolean full) {
+        Map<String, Object> view = new LinkedHashMap<>();
+        view.put("name", s.name());
+        view.put("version", s.version());
+        view.put("description", s.description());
+        view.put("tools", s.tools());
+        view.put("appliesTo", s.appliesTo());
+        view.put("evalCases", s.evalCases());
+        view.put("runtime", s.runtime());
+        if (full) {
+            view.put("inputSchema", s.inputSchema());
+            view.put("outputSchema", s.outputSchema());
+            view.put("instructions", s.instructions());
+        }
+        return view;
     }
 }

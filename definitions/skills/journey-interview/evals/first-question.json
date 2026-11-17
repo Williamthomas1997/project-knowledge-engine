@@ -1,0 +1,34 @@
+{
+  "name": "First turn of an international transfer interview asks what the user does first",
+  "input": {
+    "journey": {
+      "key": "international-transfer",
+      "name": "International transfer"
+    },
+    "transcript": [],
+    "apis": [
+      {
+        "layer": "gateway",
+        "service": "gateway",
+        "method": "POST",
+        "path": "/ocs/transfers/accounts"
+      },
+      {
+        "layer": "service",
+        "service": "transfer-service",
+        "method": "POST",
+        "path": "/api/v1/transfers/validate"
+      }
+    ]
+  },
+  "expect": [
+    {
+      "pointer": "/status",
+      "equals": "ASK"
+    },
+    {
+      "pointer": "/question",
+      "contains": "first"
+    }
+  ]
+}

@@ -10,9 +10,9 @@ Every change has versions and events, so a bad import, migration or pipeline run
 inverse:
 
 ```bash
-curl -X POST localhost:8080/api/snapshots -H 'Content-Type: application/json' -d '{"label":"before risky change"}'
+curl -H "Authorization: Bearer $PKE_API_KEY" -X POST localhost:8089/api/snapshots -H 'Content-Type: application/json' -d '{"label":"before risky change"}'
 # ... the change goes wrong; find the seq to go back to (the snapshot's seq, or from /api/history/events)
-curl -X POST localhost:8080/api/history/restore -H 'Content-Type: application/json' \
+curl -H "Authorization: Bearer $PKE_API_KEY" -X POST localhost:8089/api/history/restore -H 'Content-Type: application/json' \
      -d '{"seq": 1234, "reason": "bad import of repo X"}'
 ```
 
@@ -36,8 +36,8 @@ audit, to find the seq to restore to, and to check a restored dump is complete:
 
 ```bash
 # last exported seq vs the restored database
-curl localhost:8080/api/history/exports | jq '.[-1].toSeq'
-curl 'localhost:8080/api/history/events?afterSeq=<that seq>&limit=1'   # must be empty or newer events only
+curl -H "Authorization: Bearer $PKE_API_KEY" localhost:8089/api/history/exports | jq '.[-1].toSeq'
+curl -H "Authorization: Bearer $PKE_API_KEY" 'localhost:8089/api/history/events?afterSeq=<that seq>&limit=1'   # must be empty or newer events only
 ```
 
 Copy `<pke.data-dir>/blobs` to backup storage together with the dumps.

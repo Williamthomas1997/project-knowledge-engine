@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pke.omnicore.com/meta/execution-policy.schema.json",
+  "title": "PKE execution policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "profiles"],
+  "properties": {
+    "kind": { "const": "ExecutionPolicy" },
+    "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
+    "description": { "type": "string" },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["triggerIngestion", "evolutionRequests"],
+        "properties": {
+          "triggerIngestion": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pipelines"],
+            "properties": {
+              "pipelines": { "type": "array", "items": { "type": "string", "pattern": "^(\\*|[a-z0-9][a-z0-9-]{0,63})$" } }
+            }
+          },
+          "evolutionRequests": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kinds"],
+            "properties": {
+              "kinds": { "type": "array", "items": { "type": "string", "pattern": "^(\\*|[A-Z][A-Z0-9_]{1,63})$" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

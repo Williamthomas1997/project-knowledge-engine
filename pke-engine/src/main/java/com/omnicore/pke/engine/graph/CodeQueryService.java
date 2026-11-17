@@ -81,6 +81,15 @@ public class CodeQueryService {
                 .orElse(Map.of());
     }
 
+    /** Current APIs (both layers), for journey interviews: id, layer, service, method, path. */
+    public List<Map<String, Object>> apiCatalogue(int limit) {
+        return reader.query("""
+                MATCH (a:Entity:ApiOperation) WHERE coalesce(a.pke_status, 'CURRENT') <> 'INVALID' AND coalesce(a.pke_scope, 'main') = 'main'
+                RETURN a.pke_id AS id, a.layer AS layer, a.service AS service, a.httpMethod AS method,
+                       a.pathTemplate AS path
+                ORDER BY a.layer, a.pathTemplate, a.httpMethod, a.pke_id LIMIT $limit""", Map.of("limit", limit));
+    }
+
     public List<Map<String, Object>> gatewayApis() {
         return reader.query("""
                 MATCH (a:Entity:ApiOperation {layer: 'gateway'})

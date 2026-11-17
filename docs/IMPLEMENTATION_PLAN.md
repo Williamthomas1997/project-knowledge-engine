@@ -210,7 +210,7 @@ No LLM is used; everything below is deterministic.
 | Scanned PDF | `OcrProvider` extension point; without one the version is stored as `OCR_REQUIRED` | M2 (no OCR engine) |
 | Java | JavaParser + symbol solver, with deterministic static-dispatch fallback: packages, types, methods, imports, inheritance, `CALLS` (unresolved calls listed, never guessed), annotations, Spring endpoints → service `ApiOperation`, `INJECTS`, `USES_CONFIGURATION`, Kafka, JPA `MAPS_TO`/`READS_FROM`/`WRITES_TO`, `TESTED_BY`, `THROWS_ERROR`, `LOGS` | M2 |
 | Release SQL (error configuration) | own quote-aware `INSERT` reader (`OCS_T_ERROR_CONFIG.OCS_ERR_CODE`, configurable) | M2 |
-| Journeys (ADR-007 §6) | `JourneySourceAdapter` SPI: Postman, Java journeys + Gatling (static interpretation), JMeter, TestNG suites | M2; prompt interview in M6 |
+| Journeys (ADR-007 §6) | `JourneySourceAdapter` SPI: Postman, Java journeys + Gatling (static interpretation), JMeter, TestNG suites | M2; prompt interview in M6 (`JourneyInterviewService`, ADR-017) |
 | Gateway routes | `RouteResolver`: route export (`ocs_t_gateway_api_route` INSERTs) then Spring mapping; no route nodes | M2 |
 | OpenAPI / Swagger, `application*.yml` | swagger-parser, SnakeYAML | later |
 | Git | JGit: commits (as source versions), diffs, renames; analysis reads committed content only | M2 |
@@ -349,7 +349,7 @@ Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-P
 | **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | done (ADR-013) |
 | **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | done (ADR-014) |
 | **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | done (ADR-016) |
-| **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | next |
+| **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | done (ADR-017) |
 | **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |
 
 Each milestone ends with: tests actually executed (with results), docs + ADRs updated, a

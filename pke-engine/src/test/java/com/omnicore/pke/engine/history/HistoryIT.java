@@ -68,7 +68,7 @@ class HistoryIT extends KnowledgeIT {
     PipelineExecutor executor;
 
     private HttpResponse<String> http(String method, String path, String body) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+        HttpRequest.Builder request = authorized(URI.create("http://localhost:" + port + path))
                 .header("X-PKE-Actor", "history-it");
         if (body == null) {
             request.method(method, HttpRequest.BodyPublishers.noBody());

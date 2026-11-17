@@ -32,6 +32,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <!-- M6: API-key authentication and roles on REST and MCP (ADR-017) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- M6: MCP server (streamable HTTP on /mcp; STDIO with the mcp-stdio profile) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
         <!-- Only Neo4jClient is used; knowledge is not mapped with SDN entities (ADR-001) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

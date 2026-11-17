@@ -162,20 +162,20 @@ class RetrievalIT extends KnowledgeIT {
     void restEndpointsServeSearchContextAndNeighbourhoods() throws Exception {
         HttpClient http = HttpClient.newHttpClient();
         JsonMapper json = JsonMapper.builder().build();
-        HttpResponse<String> search = http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/retrieval/search"))
+        HttpResponse<String> search = http.send(authorized(URI.create("http://localhost:" + port + "/api/retrieval/search"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"query\": \"daily limit\", \"k\": 3}")).build(),
                 HttpResponse.BodyHandlers.ofString());
         assertThat(search.statusCode()).isEqualTo(200);
         assertThat(json.readTree(search.body()).get("hits").size()).isBetween(1, 3);
-        HttpResponse<String> ctx = http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/context"))
+        HttpResponse<String> ctx = http.send(authorized(URI.create("http://localhost:" + port + "/api/context"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"task\": \"What is the daily limit?\", \"budgetTokens\": 500}")).build(),
                 HttpResponse.BodyHandlers.ofString());
         assertThat(ctx.statusCode()).isEqualTo(200);
         assertThat(json.readTree(ctx.body()).get("usedTokens").asInt()).isLessThanOrEqualTo(500);
         String validate = method("validate(TransferRequest)");
-        JsonNode neighbourhood = json.readTree(http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port
+        JsonNode neighbourhood = json.readTree(http.send(authorized(URI.create("http://localhost:" + port
                 + "/api/entities/" + validate + "/neighbourhood?depth=1")).GET().build(), HttpResponse.BodyHandlers.ofString()).body());
         assertThat(neighbourhood.get("relationships").size()).isPositive();
         assertThat(neighbourhood.get("nodes").size()).isGreaterThan(1);

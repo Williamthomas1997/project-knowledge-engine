@@ -103,7 +103,7 @@ class BrdIngestPipelineIT extends KnowledgeIT {
     }
 
     private HttpResponse<String> http(String method, String path, String body) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+        HttpRequest.Builder request = authorized(URI.create("http://localhost:" + port + path))
                 .header("X-PKE-Actor", "william");
         if (body == null) {
             request.method(method, HttpRequest.BodyPublishers.noBody());
@@ -242,7 +242,7 @@ class BrdIngestPipelineIT extends KnowledgeIT {
             assertThat(e.get("epistemic")).isEqualTo("HUMAN_VERIFIED");
             assertThat(e.get("extractionMethod")).isEqualTo("human-answer");
         });
-        assertThat(count("MATCH (e:ChangeEvent {subjectId: $id, actor: 'api:william'}) RETURN count(e)",
+        assertThat(count("MATCH (e:ChangeEvent {subjectId: $id, actor: 'key:test-admin/william'}) RETURN count(e)",
                 Map.of("id", limitCard))).isEqualTo(1);
         assertThat(JSON.readTree(http("GET", "/api/questions?status=open", null).body()).size()).isZero();
         assertThat(http("POST", "/api/questions/" + id + "/answer", "{\"option\": \"keep-existing\"}").statusCode())

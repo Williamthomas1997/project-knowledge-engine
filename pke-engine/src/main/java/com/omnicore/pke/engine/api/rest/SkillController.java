@@ -33,12 +33,12 @@ class SkillController {
 
     @GetMapping("/skills")
     List<Map<String, Object>> skills() {
-        return registry.activeSkills().stream().map(s -> describe(s, false)).toList();
+        return registry.activeSkills().stream().map(s -> SkillRegistry.describe(s, false)).toList();
     }
 
     @GetMapping("/skills/{name}")
     Map<String, Object> skill(@PathVariable String name) {
-        Map<String, Object> view = describe(registry.active(name), true);
+        Map<String, Object> view = SkillRegistry.describe(registry.active(name), true);
         view.put("versions", registry.versions(name).stream().map(SkillDefinition::version).toList());
         return view;
     }
@@ -55,20 +55,4 @@ class SkillController {
         return ledger.calls(executionId, limit);
     }
 
-    private static Map<String, Object> describe(SkillDefinition s, boolean full) {
-        Map<String, Object> view = new LinkedHashMap<>();
-        view.put("name", s.name());
-        view.put("version", s.version());
-        view.put("description", s.description());
-        view.put("tools", s.tools());
-        view.put("appliesTo", s.appliesTo());
-        view.put("evalCases", s.evalCases());
-        view.put("runtime", s.runtime());
-        if (full) {
-            view.put("inputSchema", s.inputSchema());
-            view.put("outputSchema", s.outputSchema());
-            view.put("instructions", s.instructions());
-        }
-        return view;
-    }
 }

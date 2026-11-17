@@ -72,9 +72,19 @@ class ArchitectureTest {
 
     @ArchTest
     static final ArchRule onlyAdaptersUseSpringAi = noClasses()
-            .that().resideOutsideOfPackages(ENGINE + ".ai..", ENGINE + ".vectorstore..", GRAPH + "..")
+            .that().resideOutsideOfPackages(ENGINE + ".ai..", ENGINE + ".vectorstore..", GRAPH + "..", ENGINE + ".api.mcp..")
             .should().dependOnClassesThat().resideInAPackage("org.springframework.ai..")
             .because("skills, pipelines and retrieval use the provider-neutral ports (ADR-013, ADR-014)");
+
+    @ArchTest
+    static final ArchRule mcpToolsUseOnlyApplicationServices = noClasses()
+            .that().resideInAPackage(ENGINE + ".api.mcp..")
+            .should().dependOnClassesThat().resideInAnyPackage(ENGINE + ".api.rest..", "org.neo4j..")
+            .orShould().dependOnClassesThat().haveFullyQualifiedName(GRAPH + ".KnowledgeWriter")
+            .orShould().dependOnClassesThat().haveFullyQualifiedName(GRAPH + ".GraphTransactions")
+            .orShould().dependOnClassesThat().haveFullyQualifiedName(GRAPH + ".GraphReader")
+            .orShould().dependOnClassesThat().haveFullyQualifiedName(GRAPH + ".GraphSessions")
+            .because("MCP tools call the same application services as REST, nothing below them (M6)");
 
     @ArchTest
     static final ArchRule noNeo4jTypeOutsideTheGraphAdapter = noClasses()

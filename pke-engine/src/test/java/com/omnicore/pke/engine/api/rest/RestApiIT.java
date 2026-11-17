@@ -18,7 +18,7 @@ class RestApiIT extends KnowledgeIT {
     private final HttpClient http = HttpClient.newHttpClient();
 
     private HttpResponse<String> send(String method, String path, String contentType, String body) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+        HttpRequest.Builder request = authorized(URI.create("http://localhost:" + port + path))
                 .header("X-PKE-Actor", "rest-it");
         if (body == null) {
             request.method(method, HttpRequest.BodyPublishers.noBody());
@@ -94,7 +94,7 @@ class RestApiIT extends KnowledgeIT {
         var events = json(send("GET", "/api/history/events?subjectId=" + relationshipId, null, null));
         assertThat(events).extracting(e -> e.get("type").asString())
                 .containsExactly("RELATIONSHIP_CREATED", "RELATIONSHIP_INVALIDATED");
-        assertThat(events.get(0).get("actor").asString()).isEqualTo("api:rest-it");
+        assertThat(events.get(0).get("actor").asString()).isEqualTo("key:test-admin/rest-it");
 
         assertThat(json(send("GET", "/api/integrity", null, null)).get("violations")).isEmpty();
         assertThat(json(send("GET", "/api/entities?type=BusinessFeature", null, null)).get("total").asLong()).isEqualTo(1);

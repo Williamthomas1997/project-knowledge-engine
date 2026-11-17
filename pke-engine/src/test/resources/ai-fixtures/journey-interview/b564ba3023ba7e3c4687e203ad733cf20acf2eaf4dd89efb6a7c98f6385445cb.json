@@ -1,0 +1,35 @@
+{
+  "skill": "journey-interview",
+  "skillVersion": "1.0.0",
+  "inputHash": "b564ba3023ba7e3c4687e203ad733cf20acf2eaf4dd89efb6a7c98f6385445cb",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M6 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 740,
+  "tokensOut": 22,
+  "input": {
+    "journey": {
+      "key": "international-transfer",
+      "name": "International transfer"
+    },
+    "transcript": [],
+    "apis": [
+      {
+        "layer": "gateway",
+        "service": "gateway",
+        "method": "POST",
+        "path": "/ocs/transfers/accounts"
+      },
+      {
+        "layer": "service",
+        "service": "transfer-service",
+        "method": "POST",
+        "path": "/api/v1/transfers/validate"
+      }
+    ]
+  },
+  "response": {
+    "status": "ASK",
+    "question": "What does the user do first when they start this journey?"
+  }
+}

@@ -1,0 +1,15 @@
+# STDIO MCP launcher (bin/pke-mcp-stdio.sh): no web server; stdout carries MCP messages only, so the banner and
+# console logging are off and logs go to a file. The process runs as the key in PKE_API_KEY (StdioLogin).
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+  ai:
+    mcp:
+      server:
+        stdio: true
+logging:
+  pattern:
+    console: ""
+  file:
+    name: ${PKE_LOG_FILE:${java.io.tmpdir}/pke-mcp-stdio.log}

@@ -17,7 +17,7 @@ class SystemInfoIT extends KnowledgeIT {
     @Test
     void systemInfoReportsNeo4jAndTheReplayModelWithoutOpenAiKey() throws Exception {
         HttpResponse<String> response = HttpClient.newHttpClient().send(
-                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/system/info")).GET().build(),
+                authorized(URI.create("http://localhost:" + port + "/api/system/info")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(200);

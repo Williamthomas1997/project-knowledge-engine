@@ -41,6 +41,11 @@ public class GraphSchemaInitializer implements ApplicationRunner {
             "CREATE INDEX pke_assertion_version_from IF NOT EXISTS FOR (n:AssertionVersion) ON (n.validFromSeq)",
             "CREATE INDEX pke_event_operation IF NOT EXISTS FOR (n:ChangeEvent) ON (n.operationId)",
             "CREATE CONSTRAINT pke_snapshot_id IF NOT EXISTS FOR (n:Snapshot) REQUIRE n.pke_id IS UNIQUE",
+            // M6: API keys, audit log, journey interviews
+            "CREATE CONSTRAINT pke_api_key_id IF NOT EXISTS FOR (n:ApiKey) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_api_key_hash IF NOT EXISTS FOR (n:ApiKey) REQUIRE n.keyHash IS UNIQUE",
+            "CREATE INDEX pke_audit_event_at IF NOT EXISTS FOR (n:AuditEvent) ON (n.at)",
+            "CREATE CONSTRAINT pke_interview_session_id IF NOT EXISTS FOR (n:InterviewSession) REQUIRE n.pke_id IS UNIQUE",
             "CREATE INDEX pke_assertion_subject IF NOT EXISTS FOR (n:Assertion) ON (n.pke_subjectId)",
             "CREATE INDEX pke_assertion_object IF NOT EXISTS FOR (n:Assertion) ON (n.pke_objectId)",
             "CREATE INDEX pke_assertion_status IF NOT EXISTS FOR (n:Assertion) ON (n.pke_status)",

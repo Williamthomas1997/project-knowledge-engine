@@ -20,7 +20,7 @@ class ProposalIT extends KnowledgeIT {
     private final HttpClient http = HttpClient.newHttpClient();
 
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+        HttpRequest.Builder request = authorized(URI.create("http://localhost:" + port + path))
                 .header("X-PKE-Actor", "proposal-it");
         if (body == null) {
             request.method(method, HttpRequest.BodyPublishers.noBody());
@@ -131,7 +131,7 @@ class ProposalIT extends KnowledgeIT {
 
         JsonNode decision = ok(send("POST", "/api/proposals/p2/approve", "{\"comment\": \"looks right\"}"), 200);
         assertThat(decision.get("proposal").get("status").asString()).isEqualTo("APPROVED");
-        assertThat(decision.get("proposal").get("decidedBy").asString()).isEqualTo("api:proposal-it");
+        assertThat(decision.get("proposal").get("decidedBy").asString()).isEqualTo("key:test-admin/proposal-it");
         assertThat(decision.get("applied").get("items")).hasSize(3);
 
         JsonNode main = get("/api/entities?type=BusinessFeature");
@@ -150,7 +150,7 @@ class ProposalIT extends KnowledgeIT {
         });
         assertThat(approval).extracting(e -> e.get("type").asString())
                 .contains("ENTITY_UPDATED", "ENTITY_CREATED", "RELATIONSHIP_CREATED", "PROPOSAL_APPROVED");
-        approval.forEach(e -> assertThat(e.get("details").get("approvedBy").asString()).isEqualTo("api:proposal-it"));
+        approval.forEach(e -> assertThat(e.get("details").get("approvedBy").asString()).isEqualTo("key:test-admin/proposal-it"));
         assertThat(approval).extracting(e -> e.get("operationId").asString()).containsOnly("proposal:p2:approve");
 
         // a decided proposal accepts nothing more

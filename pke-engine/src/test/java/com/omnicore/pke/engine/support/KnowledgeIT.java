@@ -32,6 +32,7 @@ public abstract class KnowledgeIT {
         registry.add("pke.index.worker-enabled", () -> "false");
         registry.add("pke.index.await-timeout", () -> "PT10S");
         registry.add("pke.index.retry-backoff", () -> "PT0.2S");
+        registry.add("pke.security.policy-profile", () -> "test");
         registry.add("pke.pipelines.locations",
                 () -> "classpath*:definitions/pipelines/*.yaml,classpath*:test-pipelines/*.yaml");
     }
@@ -54,8 +55,14 @@ public abstract class KnowledgeIT {
     @Autowired
     private com.omnicore.pke.engine.index.IndexBootstrap indexBootstrap;
 
+    @Autowired
+    protected com.omnicore.pke.engine.security.ApiKeyService apiKeys;
+
     @LocalServerPort
     protected int port;
+
+    /** A key with every role, created for each test (the database is wiped before each test). */
+    protected String adminKey;
 
     @BeforeEach
     void resetKnowledge() {
@@ -66,6 +73,13 @@ public abstract class KnowledgeIT {
         schemaService.bootstrap();
         pipelineBootstrap.load();
         indexBootstrap.load();
+        adminKey = apiKeys.create("test-admin", java.util.List.of(com.omnicore.pke.engine.security.Role.SCHEMA_ADMIN,
+                com.omnicore.pke.engine.security.Role.EVOLUTION_OPERATOR), "test").key();
+    }
+
+    /** A request to this server with the test admin key (M6: every /api call needs a key). */
+    protected java.net.http.HttpRequest.Builder authorized(java.net.URI uri) {
+        return java.net.http.HttpRequest.newBuilder(uri).header("Authorization", "Bearer " + adminKey);
     }
 
     /** Runs a count query directly against the test database (bypassing the engine). */

@@ -1,0 +1,24 @@
+kind: ExecutionPolicy
+version: 1.0.0
+description: >-
+  What callers may start through MCP, per deployment profile (pke.security.policy-profile, env PKE_POLICY_PROFILE).
+  Roles decide who may call a tool at all (ADR-017); this policy decides what the tool may do in this environment.
+  An MCP call never executes code: trigger_ingestion starts a registered pipeline, submit_evolution_request records a
+  request for the evolution pipeline (M7).
+profiles:
+  dev:
+    triggerIngestion:
+      pipelines: ["*"]
+    evolutionRequests:
+      kinds: ["*"]
+  test:
+    triggerIngestion:
+      pipelines: [code-ingest, code-on-commit, brd-ingest, brd-update]
+    evolutionRequests:
+      kinds: [NEW_RELATIONSHIP_TYPE, NEW_ENTITY_TYPE, NEW_EXTRACTOR, NEW_SKILL]
+  prod:
+    triggerIngestion:
+      # reindex and discover-relationships change embeddings or the schema: started by an operator over REST
+      pipelines: [code-ingest, code-on-commit, brd-ingest, brd-update]
+    evolutionRequests:
+      kinds: [NEW_RELATIONSHIP_TYPE, NEW_ENTITY_TYPE, NEW_EXTRACTOR, NEW_SKILL]

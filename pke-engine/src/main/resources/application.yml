@@ -1,3 +1,7 @@
+# Port 8080 is taken by Apache httpd on the development machine; KGP calls PKE on 8089 (docs/claude-code-setup.md)
+server:
+  port: ${PKE_PORT:8089}
+
 spring:
   application:
     name: project-knowledge-engine
@@ -10,6 +14,16 @@ spring:
     neo4j:
       database: ${NEO4J_DATABASE:neo4j}
   ai:
+    mcp:
+      server:
+        # M6: MCP over streamable HTTP on /mcp (same API keys as REST); STDIO with the mcp-stdio profile
+        name: project-knowledge-engine
+        version: 0.1.0
+        type: sync
+        protocol: streamable
+        instructions: >-
+          Project Knowledge Engine: a versioned knowledge graph of the project's code, APIs, journeys, BRD
+          requirements and their evidence. Call get_task_context before a coding task; cite the evidence it returns.
     # Every model type is off by default so the engine starts without any provider key.
     # The 'openai' profile switches chat and embeddings on (application-openai.yml).
     model:
@@ -28,7 +42,9 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always
+      # M6: details (Neo4j, disk) only for authenticated callers; anonymous callers see the status alone
+      show-details: when-authorized
+      roles: READER
   info:
     env:
       enabled: true
@@ -36,3 +52,9 @@ management:
 info:
   app:
     description: AI-powered project knowledge engine
+
+# M6 security (ADR-017). Keys are created with bin/pke-keys.sh and sent as 'Authorization: Bearer <key>'.
+pke:
+  security:
+    # dev | test | prod: selects the execution policy in definitions/policies/execution.yaml
+    policy-profile: ${PKE_POLICY_PROFILE:dev}

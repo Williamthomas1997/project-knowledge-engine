@@ -1,6 +1,6 @@
-# REST API (M4)
+# REST API (M6)
 
-Base URL `http://localhost:8080`. JSON unless stated. Errors are RFC 9457 problem details. Validation errors list
+Base URL `http://localhost:8089`. JSON unless stated. Errors are RFC 9457 problem details. Validation errors list
 every problem in `violations: [{path, message}]`.
 
 | Status | Meaning |
@@ -11,8 +11,26 @@ every problem in `violations: [{path, message}]`.
 | 422 | A skill run from the API failed: invalid input or an answer outside the output schema (`errorClass`) |
 | 503 | A skill run failed transiently (rate limit, timeout); retry later |
 
-Optional header `X-PKE-Actor: <name>` is recorded on change events as `api:<name>`. **There is no authentication
-yet (M6).** Do not expose the service beyond localhost.
+| 401 | No API key, or an unknown or revoked one |
+| 403 | The key does not have the role the endpoint needs |
+
+**Authentication (M6, ADR-017).** Every `/api` call needs an API key: `Authorization: Bearer <key>` (or
+`X-API-Key: <key>`). Keys are created with `bin/pke-keys.sh create <name> <ROLE>` and only their SHA-256 is stored.
+Roles (higher ones include lower ones):
+
+| Role | May call |
+|---|---|
+| `READER` | every `GET`; `POST /api/retrieval/search`, `/api/context`, `/api/retrieval/templates/{id}/run`, `/api/logs/explain`, `/api/schema/validate` |
+| `CONTRIBUTOR` | every other `/api` call (ingestion, pipelines, answers, proposals, snapshots, imports), plus READER |
+| `SCHEMA_ADMIN` | `POST /api/schema/entity-types`, `/api/schema/relationship-types`, `/api/history/restore`, `/api/schema/migrations`, plus CONTRIBUTOR |
+| `EVOLUTION_OPERATOR` | evolution runs (M7), plus CONTRIBUTOR |
+
+Every mutating call (including refused ones) is written to the audit log as an `:AuditEvent` (actor, roles, method
+and path, status). Change events record the key as the actor, `key:<name>`; the optional `X-PKE-Actor: <name>` header
+adds who the key acts for (`key:kgp/william`). `GET /actuator/health` is open but shows details only to a READER key.
+The examples below leave the header out: add `-H "Authorization: Bearer $PKE_API_KEY"` to each.
+
+MCP (`/mcp`, same keys) is described in `docs/mcp-tools.md`.
 
 ## Schema registry
 
@@ -25,7 +43,7 @@ yet (M6).** Do not expose the service beyond localhost.
 | `POST /api/schema/validate` | Dry run. Returns `{valid, violations, breakingChanges, currentVersion}` and writes nothing |
 
 ```bash
-curl -X POST localhost:8080/api/schema/relationship-types -H 'Content-Type: application/yaml' --data-binary @- <<'EOF'
+curl -X POST localhost:8089/api/schema/relationship-types -H 'Content-Type: application/yaml' --data-binary @- <<'EOF'
 kind: RelationshipType
 name: REGULATORY_DEPENDENCY
 version: 1.0.0

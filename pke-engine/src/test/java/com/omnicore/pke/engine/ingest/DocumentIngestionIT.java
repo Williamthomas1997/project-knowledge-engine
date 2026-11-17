@@ -93,7 +93,7 @@ class DocumentIngestionIT extends KnowledgeIT {
         body.write(docx);
         body.write(("\r\n--" + boundary + "\r\nContent-Disposition: form-data; name=\"key\"\r\n\r\ndoc:brd-docx\r\n--" + boundary + "--\r\n")
                 .getBytes(StandardCharsets.UTF_8));
-        HttpResponse<String> response = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+        HttpResponse<String> response = HttpClient.newHttpClient().send(authorized(
                         URI.create("http://localhost:" + port + "/api/sources/documents"))
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())).build(), HttpResponse.BodyHandlers.ofString());
@@ -106,7 +106,7 @@ class DocumentIngestionIT extends KnowledgeIT {
         assertThat(hits).isNotEmpty();
         assertThat(hits.getFirst().headingPath()).contains("FR-1 Beneficiary currency validation");
 
-        HttpResponse<String> search = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+        HttpResponse<String> search = HttpClient.newHttpClient().send(authorized(
                 URI.create("http://localhost:" + port + "/api/sources/sections/search?q=limit")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         assertThat(search.statusCode()).isEqualTo(200);

@@ -4,7 +4,12 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M5, history and updates.** State as of any `seq`, snapshots (seq plus every version that produced the
+Status: **M6, MCP and security.** An MCP server (streamable HTTP on `/mcp`, plus a STDIO launcher) with 20 tools
+over the same services as REST (`docs/mcp-tools.md`); API keys with roles READER, CONTRIBUTOR, SCHEMA_ADMIN and
+EVOLUTION_OPERATOR on REST, MCP and actuator, an audit log, and per-profile execution policies
+(`definitions/policies/execution.yaml`); journeys captured by interview in chat (`journey-interview` skill); Claude
+Code skills in `claude-skills/` and setup in `docs/claude-code-setup.md`. PKE now listens on port **8089**.
+Earlier: **M5, history and updates.** State as of any `seq`, snapshots (seq plus every version that produced the
 knowledge) and their diffs, commit → knowledge, nightly JSONL export of change events, restore-by-inverse-writes and
 data migrations with a checkpoint (`docs/versioning.md`, `docs/recovery.md`); update pipelines `code-on-commit`
 (snapshot on `uat`/`pilot`), `brd-update` and `reindex`; `SHARES_LOGIC_WITH` between APIs (utilities excluded);
@@ -48,6 +53,9 @@ cp .env.example .env   # then edit; .env is git-ignored
 | `PKE_TEST_NEO4J_MODE` | integration tests | `auto`: Testcontainers if Docker runs, otherwise external |
 | `NEO4J_TEST_URI`, `NEO4J_TEST_USERNAME`, `NEO4J_TEST_PASSWORD`, `NEO4J_TEST_DATABASE` | integration tests in `external` mode | database `pketest`; `neo4j` and `system` are refused |
 | `OPENAI_API_KEY` | `openai` profile only | none |
+| `PKE_PORT` | the app | `8089` |
+| `PKE_API_KEY` | `bin/pke-code-on-commit.sh`, `bin/pke-mcp-stdio.sh`, MCP clients, KGP | none (create with `bin/pke-keys.sh`) |
+| `PKE_POLICY_PROFILE` | execution policy (`definitions/policies/execution.yaml`) | `dev` (also `test`, `prod`) |
 
 ## Build and test
 
@@ -85,19 +93,19 @@ The app refuses to start if Neo4j is older than 5.26. At startup it creates its 
 yet (ADR-010). A restart registers nothing new.
 
 ```bash
-curl http://localhost:8080/api/system/info
+curl http://localhost:8089/api/system/info
 ```
 ```json
 {"appVersion":"0.1.0-SNAPSHOT","neo4jVersion":"2026.10.1","neo4jEdition":"community","activeProfiles":[],"chatModelConfigured":false,"chatModel":"none","embeddingModelConfigured":false}
 ```
 
-Health: `GET /actuator/health` (includes Neo4j).
+Health: `GET /actuator/health` (details, including Neo4j, for authenticated callers only).
 
 ### Try it
 
 ```bash
 # write two methods and a CALLS relationship (natural-key references, so no ids are needed)
-curl -X POST localhost:8080/api/knowledge/changes -H 'Content-Type: application/json' -d '{
+curl -X POST localhost:8089/api/knowledge/changes -H 'Content-Type: application/json' -d '{
   "entities": [
     {"type":"JavaMethod","properties":{"repository":"demo","fqcn":"com.demo.TransferService","signature":"transfer(TransferRequest)"},"epistemic":"EXTRACTED_DETERMINISTIC"},
     {"type":"JavaMethod","properties":{"repository":"demo","fqcn":"com.demo.CurrencyConverter","signature":"convert(Money,String)"},"epistemic":"EXTRACTED_DETERMINISTIC"}],
@@ -107,60 +115,60 @@ curl -X POST localhost:8080/api/knowledge/changes -H 'Content-Type: application/
      "object":{"type":"JavaMethod","key":{"repository":"demo","fqcn":"com.demo.CurrencyConverter","signature":"convert(Money,String)"}},
      "properties":{"callCount":1},"epistemic":"EXTRACTED_DETERMINISTIC",
      "evidence":[{"sourceArtifactId":"repo:demo","sourceVersion":"c1","location":"TransferService.java:42","extractionMethod":"extract.java"}]}]}'
-curl localhost:8080/api/history/events
-curl localhost:8080/api/integrity
+curl localhost:8089/api/history/events
+curl localhost:8089/api/integrity
 ```
 
 ### Ingest a repository and a document
 
 ```bash
 # register a local Git repository (read-only; analysis reads committed content) and ingest it
-curl -X POST localhost:8080/api/sources/repositories -H 'Content-Type: application/json' \
+curl -X POST localhost:8089/api/sources/repositories -H 'Content-Type: application/json' \
      -d '{"name":"transfer-service","path":"/path/to/repo","serviceName":"transfer-service"}'
-curl -X POST 'localhost:8080/api/ingestion/runs?wait=true' -H 'Content-Type: application/json' \
+curl -X POST 'localhost:8089/api/ingestion/runs?wait=true' -H 'Content-Type: application/json' \
      -d '{"kind":"REPOSITORY","target":"transfer-service","mode":"FULL"}'      # later: "INCREMENTAL"
 # upload a document version
-curl -F file=@demo/brd/international-transfer-brd.md localhost:8080/api/sources/documents
-curl 'localhost:8080/api/sources/sections/search?q=currency'
-curl localhost:8080/api/journeys
+curl -F file=@demo/brd/international-transfer-brd.md localhost:8089/api/sources/documents
+curl 'localhost:8089/api/sources/sections/search?q=currency'
+curl localhost:8089/api/journeys
 ```
 
 ### Turn a BRD into knowledge cards (needs the `openai` profile)
 
 ```bash
-curl -F file=@demo/brd/international-transfer-brd.md localhost:8080/api/sources/documents
-curl -X POST 'localhost:8080/api/pipelines/brd-ingest/executions?wait=true' -H 'Content-Type: application/json' \
+curl -F file=@demo/brd/international-transfer-brd.md localhost:8089/api/sources/documents
+curl -X POST 'localhost:8089/api/pipelines/brd-ingest/executions?wait=true' -H 'Content-Type: application/json' \
      -d '{"documentKey":"doc:international-transfer-brd"}'
-curl 'localhost:8080/api/entities?type=KnowledgeCard'
-curl 'localhost:8080/api/questions?status=open'            # conflicts to answer:
-curl -X POST localhost:8080/api/questions/<id>/answer -H 'Content-Type: application/json' -H 'X-PKE-Actor: william' \
+curl 'localhost:8089/api/entities?type=KnowledgeCard'
+curl 'localhost:8089/api/questions?status=open'            # conflicts to answer:
+curl -X POST localhost:8089/api/questions/<id>/answer -H 'Content-Type: application/json' -H 'X-PKE-Actor: william' \
      -d '{"option":"keep-existing","comment":"FR-2 is the approved value"}'
 # after code changes: ingest the repository and link every requirement card again
-curl -X POST 'localhost:8080/api/pipelines/code-ingest/executions?wait=true' -H 'Content-Type: application/json' \
+curl -X POST 'localhost:8089/api/pipelines/code-ingest/executions?wait=true' -H 'Content-Type: application/json' \
      -d '{"repository":"transfer-service"}'
-curl localhost:8080/api/ai/calls                              # cost ledger
+curl localhost:8089/api/ai/calls                              # cost ledger
 ```
 
 ### Ask for context (M4)
 
 ```bash
-curl -X POST localhost:8080/api/context -H 'Content-Type: application/json' \
+curl -X POST localhost:8089/api/context -H 'Content-Type: application/json' \
      -d '{"task":"Modify beneficiary currency validation in the transfer flow.","budgetTokens":2000}'
-curl -X POST localhost:8080/api/retrieval/search -H 'Content-Type: application/json' -d '{"query":"daily limit"}'
-curl localhost:8080/api/sync/status                    # what is not processed, stale or pending
-curl -X POST localhost:8080/api/eval/runs -H 'Content-Type: application/json' -d '{}'
+curl -X POST localhost:8089/api/retrieval/search -H 'Content-Type: application/json' -d '{"query":"daily limit"}'
+curl localhost:8089/api/sync/status                    # what is not processed, stale or pending
+curl -X POST localhost:8089/api/eval/runs -H 'Content-Type: application/json' -d '{}'
 ```
 
 ### History, snapshots and updates (M5)
 
 ```bash
-curl -X POST localhost:8080/api/snapshots -H 'Content-Type: application/json' -d '{"label":"before release"}'
+curl -X POST localhost:8089/api/snapshots -H 'Content-Type: application/json' -d '{"label":"before release"}'
 bin/pke-code-on-commit.sh transfer-service "" uat     # ingest new commits, derive links, snapshot (tag uat/pilot)
-curl 'localhost:8080/api/snapshots/diff?from=<id>&to=<id>'                  # what changed, grouped by type
-curl localhost:8080/api/commits/<sha>/knowledge-changes                     # what a commit changed
-curl 'localhost:8080/api/history/state?seq=120&type=CALLS'                  # the graph as of a seq
-curl -X POST localhost:8080/api/logs/explain -H 'Content-Type: application/json'      -d '{"line":"INFO TransferService - Validating transfer to B-1001"}'  # where did it stop?
-curl -X POST 'localhost:8080/api/pipelines/discover-relationships/executions?wait=true' -H 'Content-Type: application/json' -d '{}'
+curl 'localhost:8089/api/snapshots/diff?from=<id>&to=<id>'                  # what changed, grouped by type
+curl localhost:8089/api/commits/<sha>/knowledge-changes                     # what a commit changed
+curl 'localhost:8089/api/history/state?seq=120&type=CALLS'                  # the graph as of a seq
+curl -X POST localhost:8089/api/logs/explain -H 'Content-Type: application/json'      -d '{"line":"INFO TransferService - Validating transfer to B-1001"}'  # where did it stop?
+curl -X POST 'localhost:8089/api/pipelines/discover-relationships/executions?wait=true' -H 'Content-Type: application/json' -d '{}'
 ```
 
 Recovery (undo inside the graph, event export, dump/load): [`docs/recovery.md`](docs/recovery.md).
@@ -168,8 +176,24 @@ Recovery (undo inside the graph, event export, dump/load): [`docs/recovery.md`](
 Gateway route exports (the `ocs_t_gateway_api_route` INSERT scripts) are read from
 `pke.ingestion.route-export-files`; see `IngestionProperties` for all ingestion settings.
 
-The full endpoint list is in [`docs/api/REST.md`](docs/api/REST.md). **There is no authentication before M6, and
-`/actuator/health` shows details.** Keep the service on localhost.
+The full endpoint list is in [`docs/api/REST.md`](docs/api/REST.md).
+
+### API keys and MCP (M6)
+
+Every `/api` and `/mcp` call needs a key (`Authorization: Bearer <key>`). The examples above leave it out: add
+`-H "Authorization: Bearer $PKE_API_KEY"`. Create keys with the CLI (only the hash is stored; the key is printed once):
+
+```bash
+mvn -DskipTests package
+export PKE_API_KEY=$(bin/pke-keys.sh create william SCHEMA_ADMIN)   # roles: READER, CONTRIBUTOR, SCHEMA_ADMIN, EVOLUTION_OPERATOR
+bin/pke-keys.sh list
+bin/pke-keys.sh revoke william
+```
+
+Claude Code connects to `http://localhost:8089/mcp` with the key; the `.mcp.json`, the skills in `claude-skills/`
+and the KGP key are described in [`docs/claude-code-setup.md`](docs/claude-code-setup.md), and every tool in
+[`docs/mcp-tools.md`](docs/mcp-tools.md). Mutating calls are audited (`:AuditEvent`). `/actuator/health` is open
+but shows details only to a key.
 
 ## Layout
 
@@ -178,10 +202,12 @@ pke-spi/       plugin contracts (plain Java, no Spring, enforced)
 pke-engine/    the Spring Boot application (packages listed in IMPLEMENTATION_PLAN §1)
 pke-plugins/   Level-3 plugins, one sub-module each
 definitions/   Git-versioned definitions: meta/ (JSON Schema 2020-12), schema/ (entity + relationship types),
-               skills/ (SKILL.md + evals), pipelines/ (YAML), policies/ (relationship policies), queries/ (graph templates)
+               skills/ (SKILL.md + evals), pipelines/ (YAML), policies/ (relationship and execution policies), queries/ (graph templates)
 demo/          synthetic corpus used by all tests: BRD (.md/.docx), transfer service + change commits, QA project, routes
 eval/          evaluation datasets (eval/datasets/*.yaml; mvn -Peval verify)
 docker/        compose file for a local Neo4j
-bin/          pke-code-on-commit.sh (CLI for the code-on-commit pipeline)
-docs/          spec, plan, ADRs (adr/), REST reference (api/), versioning.md, recovery.md, milestone prompts and reports
+bin/           pke-code-on-commit.sh, pke-keys.sh (API keys), pke-mcp-stdio.sh (STDIO MCP launcher)
+claude-skills/ Claude Code skills (pke-bootstrap, pke-context, pke-questions, pke-journey); copy into .claude/skills/
+docs/          spec, plan, ADRs (adr/), REST reference (api/), mcp-tools.md, claude-code-setup.md, versioning.md,
+               recovery.md, milestone prompts and reports
 ```

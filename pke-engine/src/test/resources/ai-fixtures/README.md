@@ -5,7 +5,8 @@ SHA-256 of the canonical skill input. Synthetic data only (`demo/` corpus and th
 
 **Provenance (M3):** no `OPENAI_API_KEY` was available when M3 was built, so every fixture here was written by
 hand following the skill's instructions (`"provider": "fixture", "model": "hand-authored"`; token counts are
-estimates, characters / 4). The M5 fixtures (`discover-relationships`, `explain-log-trail`) were written the same way. They test the engine's behaviour (decisions, writes, history, questions), not a model's
+estimates, characters / 4). The M5 fixtures (`discover-relationships`, `explain-log-trail`) and the M6 fixtures (`journey-interview`: the eval
+case and the two model turns of `McpIT`'s scripted interview) were written the same way. They test the engine's behaviour (decisions, writes, history, questions), not a model's
 quality.
 
 To replace them with real answers, delete the fixtures to re-record and run, with the key set:

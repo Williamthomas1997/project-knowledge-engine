@@ -1,0 +1,78 @@
+{
+  "skill": "journey-interview",
+  "skillVersion": "1.0.0",
+  "inputHash": "8032308eee7476a148f6e7d95f5df71573f8ee8556757b7e6d274dd381a33f6d",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M6 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 930,
+  "tokensOut": 88,
+  "input": {
+    "journey": {
+      "key": "transfer-interview",
+      "name": "Transfer by interview"
+    },
+    "transcript": [
+      {
+        "question": "What does the user do first when they start this journey?",
+        "answer": "They validate the transfer first, then they execute it. Nothing else."
+      }
+    ],
+    "apis": [
+      {
+        "layer": "gateway",
+        "service": "gateway",
+        "method": "POST",
+        "path": "/api/v1/get-ft-accounts"
+      },
+      {
+        "layer": "gateway",
+        "service": "gateway",
+        "method": "POST",
+        "path": "/api/v2/international-transfers/validation"
+      },
+      {
+        "layer": "gateway",
+        "service": "gateway",
+        "method": "POST",
+        "path": "/api/v3/international-transfers/execute"
+      },
+      {
+        "layer": "service",
+        "service": "transfer-service",
+        "method": "POST",
+        "path": "/api/v1/get-ft-accounts"
+      },
+      {
+        "layer": "service",
+        "service": "transfer-service",
+        "method": "POST",
+        "path": "/api/v2/international-transfers/validation"
+      },
+      {
+        "layer": "service",
+        "service": "transfer-service",
+        "method": "POST",
+        "path": "/api/v3/international-transfers/execute"
+      }
+    ]
+  },
+  "response": {
+    "status": "COMPLETE",
+    "description": "The user validates an international transfer and then executes it.",
+    "steps": [
+      {
+        "order": 1,
+        "name": "Validate the transfer",
+        "method": "POST",
+        "path": "/api/v2/international-transfers/validation"
+      },
+      {
+        "order": 2,
+        "name": "Execute the transfer",
+        "method": "POST",
+        "path": "/api/v3/international-transfers/execute"
+      }
+    ]
+  }
+}
