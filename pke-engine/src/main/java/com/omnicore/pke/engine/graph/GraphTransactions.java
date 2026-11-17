@@ -79,6 +79,7 @@ public class GraphTransactions {
         private final long startSeq;
         private long seq;
         private final List<PendingEvent> events = new ArrayList<>();
+        private final Map<String, Object> tags = new java.util.TreeMap<>();
 
         private WriteContext(TransactionContext tx, String actor, String operationId, List<WriteFaultInjector> faultInjectors) {
             this.tx = tx;
@@ -115,6 +116,11 @@ public class GraphTransactions {
 
         void emit(PendingEvent event) {
             events.add(event);
+        }
+
+        /** Adds a key to the details of every event of this transaction (e.g. the proposal id and approver, ADR-015). */
+        void tag(String key, Object value) {
+            tags.put(key, value);
         }
 
         void reached(WriteStage stage) {
@@ -154,7 +160,9 @@ public class GraphTransactions {
                 row.put("subjectId", event.subjectId());
                 row.put("subjectType", event.subjectType());
                 row.put("version", event.version());
-                row.put("details", CanonicalJson.write(event.details()));
+                Map<String, Object> details = new HashMap<>(event.details());
+                tags.forEach(details::putIfAbsent);
+                row.put("details", CanonicalJson.write(details));
                 rows.add(row);
             }
             tx.run("UNWIND $events AS e CREATE (ev:ChangeEvent) SET ev = e", Map.of("events", rows)).consume();
@@ -173,6 +181,14 @@ public class GraphTransactions {
             link(rows, PendingEvent.SubjectKind.SOURCE, """
                     UNWIND $rows AS row
                     MATCH (ev:ChangeEvent {seq: row.seq}), (s:SourceArtifact {pke_id: row.subjectId})
+                    CREATE (ev)-[:ABOUT]->(s)""");
+            link(rows, PendingEvent.SubjectKind.PROPOSAL, """
+                    UNWIND $rows AS row
+                    MATCH (ev:ChangeEvent {seq: row.seq}), (s:Proposal {pke_id: row.subjectId})
+                    CREATE (ev)-[:ABOUT]->(s)""");
+            link(rows, PendingEvent.SubjectKind.PROPOSAL_ITEM, """
+                    UNWIND $rows AS row
+                    MATCH (ev:ChangeEvent {seq: row.seq}), (s:ProposalItem {pke_id: row.subjectId})
                     CREATE (ev)-[:ABOUT]->(s)""");
             tx.run("MATCH (s:Sequence {name: $name}) SET s.value = $value",
                     Map.of("name", SEQUENCE_NAME, "value", seq)).consume();

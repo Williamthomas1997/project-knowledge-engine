@@ -23,6 +23,11 @@ public final class ChangeEventTypes {
     public static final String EXPORT_VERSION_RECORDED = "EXPORT_VERSION_RECORDED";
     public static final String SECTIONS_REPARSED = "SECTIONS_REPARSED";
     public static final String SOURCE_REMOVED = "SOURCE_REMOVED";
+    public static final String PROPOSAL_CREATED = "PROPOSAL_CREATED";
+    public static final String PROPOSAL_ITEM_RECORDED = "PROPOSAL_ITEM_RECORDED";
+    public static final String PROPOSAL_ITEM_UPDATED = "PROPOSAL_ITEM_UPDATED";
+    public static final String PROPOSAL_APPROVED = "PROPOSAL_APPROVED";
+    public static final String PROPOSAL_REJECTED = "PROPOSAL_REJECTED";
 
     private ChangeEventTypes() {
     }

@@ -15,6 +15,9 @@ import com.omnicore.pke.engine.graph.KnowledgeQueryService.Page;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.RelationshipView;
 import com.omnicore.pke.engine.graph.KnowledgeQueryService.VersionView;
 import com.omnicore.pke.engine.store.GraphStore;
+import com.omnicore.pke.engine.store.Proposals;
+import com.omnicore.pke.engine.kernel.ValidationFailedException;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +30,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Knowledge read and write endpoints. All writes go through {@link GraphStore}. */
+/**
+ * Knowledge read and write endpoints. All writes go through {@link GraphStore}, or through {@link Proposals} when
+ * {@code scope=proposal:<id>} (ADR-015). Reads return scope {@code main} unless {@code scope} or
+ * {@code includeProposals=true} widens them.
+ */
 @RestController
 @RequestMapping("/api")
 class KnowledgeController {
@@ -35,36 +42,71 @@ class KnowledgeController {
     private final GraphStore writer;
     private final KnowledgeQueryService queries;
     private final GraphIntegrityService integrity;
+    private final Proposals proposals;
 
-    KnowledgeController(GraphStore writer, KnowledgeQueryService queries, GraphIntegrityService integrity) {
+    KnowledgeController(GraphStore writer, KnowledgeQueryService queries, GraphIntegrityService integrity,
+                        Proposals proposals) {
         this.writer = writer;
         this.queries = queries;
         this.integrity = integrity;
+        this.proposals = proposals;
+    }
+
+    /** Applies the change set to main, or records it in the proposal named by {@code scope}. */
+    private ChangeResult write(ChangeSet changes, String scope, String actor) {
+        String proposalId = proposalId(scope);
+        return proposalId == null ? writer.apply(changes, Actors.of(actor))
+                : proposals.record(proposalId, changes, Actors.of(actor));
+    }
+
+    static String proposalId(String scope) {
+        try {
+            return Proposals.proposalIdOf(scope);
+        } catch (IllegalArgumentException e) {
+            throw ValidationFailedException.of("scope", e.getMessage());
+        }
+    }
+
+    private List<String> scopes(String scope, boolean includeProposals) {
+        List<String> scopes = new ArrayList<>();
+        String proposalId = proposalId(scope);
+        if (proposalId != null) {
+            scopes.add(Proposals.scopeOf(proposalId));
+        }
+        if (includeProposals) {
+            queries.openProposalScopes().stream().filter(s -> !scopes.contains(s)).forEach(scopes::add);
+        }
+        return scopes;
     }
 
     /** Applies entities, relationships and invalidations in one transaction. */
     @PostMapping("/knowledge/changes")
     ResponseEntity<ChangeResult> apply(@RequestBody ChangeSet changes,
+                                       @RequestParam(required = false) String scope,
                                        @RequestHeader(value = Actors.HEADER, required = false) String actor) {
-        return respond(writer.apply(changes, Actors.of(actor)));
+        return respond(write(changes, scope, actor));
     }
 
     @PostMapping("/entities")
     ResponseEntity<ChangeResult> upsertEntity(@RequestBody EntityWrite entity,
+                                              @RequestParam(required = false) String scope,
                                               @RequestHeader(value = Actors.HEADER, required = false) String actor) {
-        return respond(writer.apply(new ChangeSet(null, List.of(entity), List.of(), List.of()), Actors.of(actor)));
+        return respond(write(new ChangeSet(null, List.of(entity), List.of(), List.of()), scope, actor));
     }
 
     @GetMapping("/entities")
     Page<EntityView> entities(@RequestParam(required = false) String type,
                               @RequestParam(defaultValue = "0") int offset,
-                              @RequestParam(defaultValue = "50") int limit) {
-        return queries.entities(type, offset, limit);
+                              @RequestParam(defaultValue = "50") int limit,
+                              @RequestParam(required = false) String scope,
+                              @RequestParam(defaultValue = "false") boolean includeProposals) {
+        return queries.entities(type, offset, limit, scopes(scope, includeProposals));
     }
 
     @GetMapping("/entities/{id}")
-    EntityView entity(@PathVariable String id) {
-        return queries.entity(id);
+    EntityView entity(@PathVariable String id, @RequestParam(required = false) String scope,
+                      @RequestParam(defaultValue = "false") boolean includeProposals) {
+        return queries.entity(id, scopes(scope, includeProposals));
     }
 
     @GetMapping("/entities/{id}/versions")
@@ -74,19 +116,23 @@ class KnowledgeController {
 
     @GetMapping("/entities/{id}/relationships")
     List<RelationshipView> entityRelationships(@PathVariable String id,
-                                               @RequestParam(defaultValue = "false") boolean includeInvalid) {
-        return queries.relationshipsOf(id, includeInvalid);
+                                               @RequestParam(defaultValue = "false") boolean includeInvalid,
+                                               @RequestParam(required = false) String scope,
+                                               @RequestParam(defaultValue = "false") boolean includeProposals) {
+        return queries.relationshipsOf(id, includeInvalid, scopes(scope, includeProposals));
     }
 
     @PostMapping("/relationships")
     ResponseEntity<ChangeResult> upsertRelationship(@RequestBody RelationshipWrite relationship,
+                                                    @RequestParam(required = false) String scope,
                                                     @RequestHeader(value = Actors.HEADER, required = false) String actor) {
-        return respond(writer.apply(new ChangeSet(null, List.of(), List.of(relationship), List.of()), Actors.of(actor)));
+        return respond(write(new ChangeSet(null, List.of(), List.of(relationship), List.of()), scope, actor));
     }
 
     @GetMapping("/relationships/{id}")
-    RelationshipView relationship(@PathVariable String id) {
-        return queries.relationship(id);
+    RelationshipView relationship(@PathVariable String id, @RequestParam(required = false) String scope,
+                                  @RequestParam(defaultValue = "false") boolean includeProposals) {
+        return queries.relationship(id, scopes(scope, includeProposals));
     }
 
     @GetMapping("/relationships/{id}/versions")
@@ -97,11 +143,14 @@ class KnowledgeController {
     /** Ends the relationship's current validity. The assertion, its evidence and its history are kept. */
     @PostMapping("/relationships/{id}/invalidate")
     ChangeResult invalidate(@PathVariable String id, @RequestBody(required = false) RelationshipInvalidation body,
+                            @RequestParam(required = false) String scope,
                             @RequestHeader(value = Actors.HEADER, required = false) String actor) {
         RelationshipInvalidation request = body == null
                 ? new RelationshipInvalidation(id, null, null, null)
                 : new RelationshipInvalidation(id, body.reason(), body.invalidAt(), body.evidence());
-        return writer.invalidate(request, Actors.of(actor));
+        String proposalId = proposalId(scope);
+        return proposalId == null ? writer.invalidate(request, Actors.of(actor))
+                : proposals.record(proposalId, new ChangeSet(null, List.of(), List.of(), List.of(request)), Actors.of(actor));
     }
 
     @GetMapping("/history/events")

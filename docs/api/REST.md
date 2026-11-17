@@ -37,6 +37,21 @@ properties: { rationale: { type: text } }
 EOF
 ```
 
+## Scopes and proposals (ADR-015)
+
+Knowledge has a scope: `main`, or `proposal:<id>`. Every write endpoint below accepts `?scope=proposal:<id>`: the change
+set is validated like a main write and recorded in the proposal (invisible to default reads). Entity and relationship
+reads accept `?scope=proposal:<id>` or `?includeProposals=true` to overlay proposal items on main; views have a `scope`
+field. Retrieval, templates and context always read main.
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/proposals` | `{id?, title, description?, sourceRun?}`: creates an `OPEN` proposal. `201`; `409` if the id exists |
+| `GET /api/proposals?status=OPEN\|APPROVED\|REJECTED` | List |
+| `GET /api/proposals/{id}` | Proposal + diff against main: `entities` and `relationships`, each `{added, changed, removed, unchanged}` |
+| `POST /api/proposals/{id}/approve` | `{comment?}`: promotes every item to main in one transaction; events carry `proposalId` and `approvedBy` |
+| `POST /api/proposals/{id}/reject` | `{reason?}`: the proposal and its items become `REJECTED`; history is kept |
+
 ## Knowledge writes
 
 | Method and path | Purpose |

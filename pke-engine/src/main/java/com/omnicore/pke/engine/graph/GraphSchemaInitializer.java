@@ -34,6 +34,8 @@ public class GraphSchemaInitializer implements ApplicationRunner {
             "CREATE CONSTRAINT pke_source_version_id IF NOT EXISTS FOR (n:SourceVersion) REQUIRE n.pke_id IS UNIQUE",
             "CREATE CONSTRAINT pke_section_id IF NOT EXISTS FOR (n:Section) REQUIRE n.pke_id IS UNIQUE",
             "CREATE CONSTRAINT pke_ingestion_run_id IF NOT EXISTS FOR (n:IngestionRun) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_proposal_id IF NOT EXISTS FOR (n:Proposal) REQUIRE n.pke_id IS UNIQUE",
+            "CREATE CONSTRAINT pke_proposal_item_id IF NOT EXISTS FOR (n:ProposalItem) REQUIRE n.pke_id IS UNIQUE",
             "CREATE INDEX pke_entity_type IF NOT EXISTS FOR (n:Entity) ON (n.pke_type)",
             "CREATE INDEX pke_assertion_subject IF NOT EXISTS FOR (n:Assertion) ON (n.pke_subjectId)",
             "CREATE INDEX pke_assertion_object IF NOT EXISTS FOR (n:Assertion) ON (n.pke_objectId)",

@@ -75,26 +75,41 @@ public class KnowledgeWriter {
         }
         String operationId = changes.operationId() != null ? changes.operationId() : PkeIds.uuidV7().toString();
         Prepared prepared = prepare(changes);
-        return transactions.write(actor == null ? "unknown" : actor, operationId, ctx -> {
-            List<ItemOutcome> outcomes = new ArrayList<>();
-            Set<String> touchedRelationships = new HashSet<>();
-            prepared.entities().forEach(e -> outcomes.add(writeEntity(ctx, e)));
-            for (PreparedRelationship r : prepared.relationships()) {
-                ItemOutcome outcome = writeRelationship(ctx, r, Boolean.TRUE.equals(changes.skipMissingEndpoints()));
-                touchedRelationships.add(outcome.id());
-                outcomes.add(outcome);
+        return transactions.write(actor == null ? "unknown" : actor, operationId,
+                ctx -> applyPrepared(ctx, prepared, changes, operationId));
+    }
+
+    /**
+     * Applies an already validated change set inside the caller's transaction (ADR-015: a proposal approval promotes
+     * its items and records the decision in one transaction).
+     */
+    ChangeResult applyPrepared(WriteContext ctx, Prepared prepared, ChangeSet changes, String operationId) {
+        List<ItemOutcome> outcomes = new ArrayList<>();
+        Set<String> touchedRelationships = new HashSet<>();
+        prepared.entities().forEach(e -> outcomes.add(writeEntity(ctx, e)));
+        for (PreparedRelationship r : prepared.relationships()) {
+            ItemOutcome outcome = writeRelationship(ctx, r, Boolean.TRUE.equals(changes.skipMissingEndpoints()));
+            touchedRelationships.add(outcome.id());
+            outcomes.add(outcome);
+        }
+        prepared.invalidations().forEach(i -> outcomes.add(invalidate(ctx, i)));
+        prepared.entityInvalidations().forEach(i -> outcomes.add(invalidateEntity(ctx, i)));
+        for (ScopeRetraction retraction : prepared.retractions()) {
+            for (String id : retractable(ctx, retraction, touchedRelationships)) {
+                outcomes.add(invalidate(ctx, new PreparedInvalidation("/retractions", id, retraction.reason(), null, List.of())));
             }
-            prepared.invalidations().forEach(i -> outcomes.add(invalidate(ctx, i)));
-            prepared.entityInvalidations().forEach(i -> outcomes.add(invalidateEntity(ctx, i)));
-            for (ScopeRetraction retraction : prepared.retractions()) {
-                for (String id : retractable(ctx, retraction, touchedRelationships)) {
-                    outcomes.add(invalidate(ctx, new PreparedInvalidation("/retractions", id, retraction.reason(), null, List.of())));
-                }
-            }
-            List<Long> seqs = outcomes.stream().map(ItemOutcome::seq).filter(Objects::nonNull).toList();
-            return new ChangeResult(operationId, outcomes, seqs.isEmpty() ? null : seqs.getFirst(),
-                    seqs.isEmpty() ? null : seqs.getLast());
-        });
+        }
+        List<Long> seqs = outcomes.stream().map(ItemOutcome::seq).filter(Objects::nonNull).toList();
+        return new ChangeResult(operationId, outcomes, seqs.isEmpty() ? null : seqs.getFirst(),
+                seqs.isEmpty() ? null : seqs.getLast());
+    }
+
+    /** Validates a change set without writing (schema, natural keys, evidence). Throws {@link ValidationFailedException}. */
+    Prepared validate(ChangeSet changes) {
+        if (changes == null || changes.isEmpty()) {
+            throw ValidationFailedException.of("$", "the change set is empty");
+        }
+        return prepare(changes);
     }
 
     public ChangeResult invalidate(RelationshipInvalidation invalidation, String actor) {
@@ -103,27 +118,27 @@ public class KnowledgeWriter {
 
     // ---------------------------------------------------------------- validation before any Cypher runs
 
-    private record Prepared(List<PreparedEntity> entities, List<PreparedRelationship> relationships,
+    record Prepared(List<PreparedEntity> entities, List<PreparedRelationship> relationships,
                             List<PreparedInvalidation> invalidations, List<ScopeRetraction> retractions,
                             List<PreparedInvalidation> entityInvalidations) {
     }
 
     /** Evidence properties without the subject-dependent id; {@code idKey} completes the id once the subject is known. */
-    private record EvidenceTemplate(Map<String, Object> row, List<Object> idKey) {
+    record EvidenceTemplate(Map<String, Object> row, List<Object> idKey) {
     }
 
-    private record PreparedEntity(String path, EntityTypeDefinition definition, String computedId, String renamedFromId,
+    record PreparedEntity(String path, EntityTypeDefinition definition, String computedId, String renamedFromId,
                                   Map<String, Object> properties, String hash, EpistemicStatus epistemic,
                                   OffsetDateTime validAt, List<EvidenceTemplate> evidence) {
     }
 
-    private record PreparedRelationship(String path, RelationshipTypeDefinition definition, String subjectId,
+    record PreparedRelationship(String path, RelationshipTypeDefinition definition, String subjectId,
                                         String objectId, List<Object> discriminator, Map<String, Object> properties,
                                         String hash, EpistemicStatus epistemic, OffsetDateTime validAt,
                                         List<EvidenceTemplate> evidence) {
     }
 
-    private record PreparedInvalidation(String path, String id, String reason, OffsetDateTime invalidAt,
+    record PreparedInvalidation(String path, String id, String reason, OffsetDateTime invalidAt,
                                         List<EvidenceTemplate> evidence) {
     }
 
@@ -399,7 +414,7 @@ public class KnowledgeWriter {
             ctx.run("""
                     CREATE (n:Entity {pke_id: $id, pke_type: $type, pke_schemaVersion: $schemaVersion, pke_version: 1,
                                       pke_propsHash: $hash, pke_epistemic: $epistemic, pke_validAt: $validAt,
-                                      pke_status: 'CURRENT', pke_createdSeq: $seq, pke_updatedSeq: $seq})
+                                      pke_status: 'CURRENT', pke_scope: 'main', pke_createdSeq: $seq, pke_updatedSeq: $seq})
                     SET n:$($label)
                     SET n += $props, n.pke_searchText = $searchText""", params("id", id, "type", e.definition().name(), "label", label,
                     "searchText", searchText(e.properties()),
@@ -450,7 +465,7 @@ public class KnowledgeWriter {
                 SET n += $props, n.pke_version = $version, n.pke_propsHash = $hash, n.pke_epistemic = $epistemic,
                     n.pke_validAt = coalesce($validAt, n.pke_validAt), n.pke_updatedSeq = $seq,
                     n.pke_schemaVersion = $schemaVersion, n.pke_status = 'CURRENT', n.pke_invalidAt = null,
-                    n.pke_invalidationReason = null, n.pke_searchText = $searchText""", params("id", id, "props", props,
+                    n.pke_invalidationReason = null, n.pke_searchText = $searchText, n.pke_scope = 'main'""", params("id", id, "props", props,
                 "searchText", searchText(e.properties()), "version", newVersion,
                 "hash", e.hash(), "epistemic", e.epistemic().name(), "validAt", e.validAt(), "seq", seq,
                 "schemaVersion", e.definition().version()));
@@ -581,7 +596,7 @@ public class KnowledgeWriter {
                                          pke_schemaVersion: $schemaVersion, pke_subjectId: $subjectId,
                                          pke_objectId: $objectId, pke_status: 'CURRENT', pke_epistemic: $epistemic,
                                          pke_version: 1, pke_propsHash: $hash, pke_validAt: $validAt,
-                                         pke_status: 'CURRENT', pke_createdSeq: $seq, pke_updatedSeq: $seq})
+                                         pke_status: 'CURRENT', pke_scope: 'main', pke_createdSeq: $seq, pke_updatedSeq: $seq})
                     SET a += $props
                     CREATE (a)-[:SUBJECT]->(s), (a)-[:OBJECT]->(o)""", params("id", id, "type", type,
                     "category", category, "schemaVersion", r.definition().version(), "subjectId", subjectId,
@@ -733,7 +748,8 @@ public class KnowledgeWriter {
                 MATCH (a:Assertion {pke_id: $id})
                 SET a += $props, a.pke_version = $version, a.pke_propsHash = $hash, a.pke_epistemic = $epistemic,
                     a.pke_status = $status, a.pke_validAt = $validAt, a.pke_invalidAt = $invalidAt,
-                    a.pke_invalidationReason = $reason, a.pke_updatedSeq = $seq, a.pke_schemaVersion = $schemaVersion""",
+                    a.pke_invalidationReason = $reason, a.pke_updatedSeq = $seq, a.pke_schemaVersion = $schemaVersion,
+                    a.pke_scope = 'main'""",
                 params("id", id, "props", props, "version", version, "hash", hash, "epistemic", epistemic,
                         "status", status, "validAt", validAt, "invalidAt", invalidAt, "reason", reason, "seq", seq,
                         "schemaVersion", schemaVersion));
