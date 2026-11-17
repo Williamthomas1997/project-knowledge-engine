@@ -24,8 +24,11 @@ import com.github.javaparser.ast.expr.ArrayInitializerExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.TypeExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
@@ -112,6 +115,24 @@ public final class JavaSourceExtractor {
     private final Map<String, String> repositoryTables = new HashMap<>();
     private final Map<String, String> errorConstants = new HashMap<>();
     private final List<String> parseProblems = new ArrayList<>();
+    private final Map<String, List<String>> implementations = new HashMap<>();
+
+    /**
+     * Reactor, WebClient and Stream operators: when the receiver of a call chain cannot be typed (no library
+     * classpath) and the call is one of these, it is a library call, recorded with reason {@code external-library}.
+     * The lambdas and method references passed to them are still analysed.
+     */
+    private static final Set<String> LIBRARY_OPERATORS = Set.of("map", "flatMap", "flatMapMany", "flatMapIterable",
+            "then", "thenReturn", "thenMany", "doOnNext", "doOnSuccess", "doOnError", "doOnSubscribe", "doFinally",
+            "doOnTerminate", "onErrorResume", "onErrorMap", "onErrorReturn", "switchIfEmpty", "defaultIfEmpty", "filter",
+            "zipWith", "zipWhen", "collectList", "subscribe", "block", "timeout", "retry", "retryWhen", "cache", "log",
+            "contextWrite", "subscribeOn", "publishOn", "as", "transform", "hasElement", "single", "next", "concatMap",
+            "retrieve", "exchangeToMono", "exchangeToFlux", "bodyToMono", "bodyToFlux", "toEntity", "toBodilessEntity",
+            "onStatus", "uri", "header", "headers", "bodyValue", "body", "contentType", "accept", "attribute", "cookie",
+            "get", "post", "put", "patch", "delete", "method", "stream", "collect", "toList", "forEach", "orElse",
+            "orElseGet", "orElseThrow", "ifPresent", "isPresent", "isEmpty", "anyMatch", "allMatch", "noneMatch",
+            "findFirst", "findAny", "sorted", "distinct", "limit", "count", "reduce", "boxed", "getBody",
+            "getStatusCode", "getHeaders", "build", "builder");
 
     public JavaSourceExtractor(Path root, List<String> javaFiles, Settings settings) {
         this.root = root;
@@ -135,6 +156,22 @@ public final class JavaSourceExtractor {
             }
         }
         units.forEach(this::index);
+        units.forEach(this::indexImplementations);
+    }
+
+    /** Interface → its implementing classes in this repository (abstract classes excluded). */
+    private void indexImplementations(String file, CompilationUnit cu) {
+        for (ClassOrInterfaceDeclaration c : cu.findAll(ClassOrInterfaceDeclaration.class)) {
+            if (c.isInterface() || c.isAbstract() || c.getFullyQualifiedName().isEmpty()) {
+                continue;
+            }
+            for (ClassOrInterfaceType implemented : c.getImplementedTypes()) {
+                String iface = qualify(implemented, cu);
+                if (iface != null && types.get(iface) instanceof ClassOrInterfaceDeclaration d && d.isInterface()) {
+                    implementations.computeIfAbsent(iface, x -> new ArrayList<>()).add(c.getFullyQualifiedName().get());
+                }
+            }
+        }
     }
 
     public List<String> parseProblems() {
@@ -327,22 +364,29 @@ public final class JavaSourceExtractor {
                 if (types.containsKey(owner)) {
                     String target = resolved instanceof JavaParserMethodDeclaration jp ? signature(jp.getWrappedNode())
                             : resolved.getName() + "(" + String.join(",", paramTypes(resolved)) + ")";
-                    pending.add(new Object[]{"CALL", owner, target, call});
+                    addCall(pending, unresolvedCalls, owner, target, call, "resolved");
                 }
             } catch (RuntimeException | StackOverflowError e) {
                 Optional<String[]> fallback = declaredTarget(call, callable, cu);
                 if (fallback.isPresent()) {
                     String[] target = fallback.get();
                     if (target.length == 2) {
-                        pending.add(new Object[]{"CALL", target[0], target[1], call});
+                        addCall(pending, unresolvedCalls, target[0], target[1], call, "resolved");
                     }
                     continue;
                 }
                 String scope = call.getScope().map(Node::toString).orElse("this");
-                String item = (scope.length() > 60 ? scope.substring(0, 57) + "..." : scope) + "." + name + "/" + call.getArguments().size();
-                if (!unresolvedCalls.contains(item) && unresolvedCalls.size() < 50) {
-                    unresolvedCalls.add(item);
-                }
+                addUnresolved(unresolvedCalls, unresolvedReason(call, callable, cu),
+                        (scope.length() > 60 ? scope.substring(0, 57) + "..." : scope) + "." + name + "/" + call.getArguments().size());
+            }
+        }
+        // method references (this::x, field::x, Type::x) passed to Reactor operators, streams and callbacks
+        for (MethodReferenceExpr ref : callable.findAll(MethodReferenceExpr.class)) {
+            String[] target = methodReference(ref, callable, cu);
+            if (target.length == 2) {
+                addCall(pending, unresolvedCalls, target[0], target[1], ref, "method-reference");
+            } else if (target.length == 1) {
+                addUnresolved(unresolvedCalls, target[0], ref.toString());
             }
         }
         EntityRef self = k.entity("JavaMethod", props, List.of("repository", "fqcn", "signature"), here);
@@ -355,6 +399,7 @@ public final class JavaSourceExtractor {
                     "methodName", callable.getNameAsString(), "framework", framework),
                     List.of("repository", "fqcn", "methodName"), here);
         }
+        Map<String, String> resolutions = new HashMap<>();
         for (Object[] p : pending) {
             switch ((String) p[0]) {
                 case "LOG" -> {
@@ -378,9 +423,11 @@ public final class JavaSourceExtractor {
                             evidence(file, call)), Map.of(), evidence(file, call), null);
                 }
                 case "CALL" -> {
-                    MethodCallExpr call = (MethodCallExpr) p[3];
+                    Node call = (Node) p[3];
                     EntityRef target = methodRef((String) p[1], (String) p[2]);
-                    k.relate("CALLS", self, target, Map.of("resolution", "resolved"), evidence(file, call), "callCount");
+                    // one edge per target: the first way it was resolved is kept
+                    String resolution = resolutions.computeIfAbsent(p[1] + "#" + p[2], x -> (String) p[4]);
+                    k.relate("CALLS", self, target, Map.of("resolution", resolution), evidence(file, call), "callCount");
                     if (testCase != null && !typePaths.getOrDefault((String) p[1], "").contains("src/test/")) {
                         k.relate("TESTED_BY", target, testCase, Map.of(), evidence(file, call), null);
                     }
@@ -544,6 +591,9 @@ public final class JavaSourceExtractor {
         if (scope.isEmpty() || scope.get().isThisExpr()) {
             owner = caller.findAncestor(TypeDeclaration.class).flatMap(t -> ((TypeDeclaration<?>) t).getFullyQualifiedName()).orElse(null);
         } else if (scope.get() instanceof NameExpr name) {
+            if (untypedLambdaParameter(caller, name.getNameAsString())) {
+                return Optional.empty(); // an implicit lambda parameter may shadow a field of another type: not guessed
+            }
             Type declared = declaredType(caller, name.getNameAsString());
             if (declared == null) {
                 // not a variable: a static call on a type name (repository type, import or java.lang)
@@ -558,6 +608,16 @@ public final class JavaSourceExtractor {
             }
             if (declared.isPrimitiveType()) {
                 return Optional.of(new String[0]);
+            }
+            owner = qualify(declared, cu);
+            if (owner == null) {
+                return declared.isClassOrInterfaceType() && isJdkOrImported(declared, cu) ? Optional.of(new String[0]) : Optional.empty();
+            }
+        } else if (scope.get() instanceof FieldAccessExpr field && field.getScope().isThisExpr()) {
+            // this.service.call(..): the declared type of the (injected) field
+            Type declared = declaredType(caller, field.getNameAsString());
+            if (declared == null) {
+                return Optional.empty();
             }
             owner = qualify(declared, cu);
             if (owner == null) {
@@ -580,6 +640,158 @@ public final class JavaSourceExtractor {
             return Optional.of(new String[0]);
         }
         return found;
+    }
+
+    /**
+     * Adds a call. A call to an interface method with exactly one implementing class in the repository also calls
+     * that class's method with the same signature ({@code single-implementation}); with several implementations the
+     * interface edge stays and the dispatch is listed as unresolved ({@code multiple-implementations}), never guessed.
+     */
+    private void addCall(List<Object[]> pending, List<String> unresolvedCalls, String owner, String signature, Node at,
+                         String resolution) {
+        pending.add(new Object[]{"CALL", owner, signature, at, resolution});
+        List<String> impls = implementations.getOrDefault(owner, List.of());
+        if (impls.size() == 1) {
+            String impl = impls.getFirst();
+            boolean declared = types.get(impl) != null && callables(types.get(impl)).stream()
+                    .anyMatch(c -> signature(c).equals(signature));
+            if (declared) {
+                pending.add(new Object[]{"CALL", impl, signature, at, "single-implementation"});
+            } else {
+                addUnresolved(unresolvedCalls, "inherited-implementation", owner + "#" + signature + " -> " + impl);
+            }
+        } else if (impls.size() > 1) {
+            addUnresolved(unresolvedCalls, "multiple-implementations", owner + "#" + signature + " -> " + impls.size()
+                    + " implementations");
+        }
+    }
+
+    /** Unresolved calls are recorded as {@code <reason>: <call>} (at most 50 per method). */
+    private static void addUnresolved(List<String> unresolvedCalls, String reason, String call) {
+        String item = reason + ": " + call;
+        if (!unresolvedCalls.contains(item) && unresolvedCalls.size() < 50) {
+            unresolvedCalls.add(item);
+        }
+    }
+
+    /**
+     * Why a call could not be resolved: {@code external-library} (an operator on a receiver chain that cannot be
+     * typed without the library classpath, e.g. Reactor or WebClient), {@code untyped-lambda-parameter},
+     * {@code unknown-receiver-chain}, {@code ambiguous-overload}, {@code unknown-type} or {@code unknown-scope}.
+     */
+    private String unresolvedReason(MethodCallExpr call, CallableDeclaration<?> caller, CompilationUnit cu) {
+        Optional<Expression> scope = call.getScope();
+        if (scope.isPresent() && scope.get() instanceof MethodCallExpr) {
+            return LIBRARY_OPERATORS.contains(call.getNameAsString()) ? "external-library" : "unknown-receiver-chain";
+        }
+        if (scope.isPresent() && scope.get() instanceof NameExpr name) {
+            if (untypedLambdaParameter(caller, name.getNameAsString())) {
+                return "untyped-lambda-parameter";
+            }
+            Type declared = declaredType(caller, name.getNameAsString());
+            if (declared != null && qualify(declared, cu) == null) {
+                return "unknown-type";
+            }
+            if (declared == null && typeNamed(name.getNameAsString(), cu) == null) {
+                return "unknown-scope";
+            }
+        }
+        if (scope.isEmpty() || scope.get().isThisExpr() || scope.get() instanceof NameExpr) {
+            return "ambiguous-overload";
+        }
+        return "unknown-scope";
+    }
+
+    private static boolean untypedLambdaParameter(CallableDeclaration<?> caller, String variable) {
+        return caller.findAll(LambdaExpr.class).stream().flatMap(l -> l.getParameters().stream())
+                .anyMatch(p -> p.getNameAsString().equals(variable) && p.getType().isUnknownType());
+    }
+
+    /**
+     * A method reference: {@code {owner, signature}} for a repository method, {@code {reason}} when it cannot be
+     * resolved, empty when it points outside the repository (JDK or library) or at a constructor.
+     */
+    private String[] methodReference(MethodReferenceExpr ref, CallableDeclaration<?> caller, CompilationUnit cu) {
+        if ("new".equals(ref.getIdentifier())) {
+            return new String[0];
+        }
+        try {
+            ResolvedMethodDeclaration resolved = ref.resolve();
+            String owner = resolved.declaringType().getQualifiedName();
+            if (!types.containsKey(owner)) {
+                return new String[0];
+            }
+            return new String[]{owner, resolved instanceof JavaParserMethodDeclaration jp ? signature(jp.getWrappedNode())
+                    : resolved.getName() + "(" + String.join(",", paramTypes(resolved)) + ")"};
+        } catch (RuntimeException | StackOverflowError e) {
+            // without the library classpath the solver often fails on the target functional type: fall back below
+        }
+        Expression scope = ref.getScope();
+        // JavaParser parses the receiver of service::validate as a type expression: a declared variable or field wins
+        if (scope instanceof TypeExpr t && t.getType().isClassOrInterfaceType()
+                && t.getType().asClassOrInterfaceType().getScope().isEmpty()) {
+            String simple = t.getType().asClassOrInterfaceType().getNameAsString();
+            if (declaredType(caller, simple) != null || untypedLambdaParameter(caller, simple)) {
+                scope = new NameExpr(simple);
+            }
+        }
+        String owner;
+        if (scope.isThisExpr()) {
+            owner = caller.findAncestor(TypeDeclaration.class).flatMap(t -> ((TypeDeclaration<?>) t).getFullyQualifiedName()).orElse(null);
+        } else if (scope instanceof TypeExpr typeExpr) {
+            owner = qualify(typeExpr.getType(), cu);
+            if (owner == null) {
+                owner = typeExpr.getType().isClassOrInterfaceType() ? typeNamed(typeExpr.getType().asClassOrInterfaceType().getNameAsString(), cu) : null;
+            }
+            if (owner == null) {
+                return typeExpr.getType().isClassOrInterfaceType() && isJdkOrImported(typeExpr.getType(), cu)
+                        ? new String[0] : new String[]{"unknown-type"};
+            }
+        } else if (scope instanceof NameExpr || scope instanceof FieldAccessExpr f && f.getScope().isThisExpr()) {
+            String variable = scope instanceof NameExpr n ? n.getNameAsString() : ((FieldAccessExpr) scope).getNameAsString();
+            Type declared = declaredType(caller, variable);
+            if (declared == null) {
+                if (untypedLambdaParameter(caller, variable)) {
+                    return new String[]{"untyped-lambda-parameter"};
+                }
+                owner = typeNamed(variable, cu);
+                if (owner == null) {
+                    return new String[]{"unknown-scope"};
+                }
+            } else {
+                owner = qualify(declared, cu);
+                if (owner == null) {
+                    return declared.isClassOrInterfaceType() && isJdkOrImported(declared, cu) ? new String[0]
+                            : new String[]{"unknown-type"};
+                }
+            }
+        } else {
+            return new String[]{"unknown-receiver-chain"};
+        }
+        if (owner == null || !types.containsKey(owner)) {
+            return new String[0];
+        }
+        String name = ref.getIdentifier();
+        Set<String> visited = new HashSet<>();
+        for (String current = owner; current != null && visited.add(current); ) {
+            TypeDeclaration<?> type = types.get(current);
+            if (type == null) {
+                return new String[0];
+            }
+            List<MethodDeclaration> candidates = type.getMethodsByName(name);
+            if (candidates.size() == 1) {
+                return new String[]{current, signature(candidates.getFirst())};
+            }
+            if (candidates.size() > 1) {
+                return new String[]{"ambiguous-method-reference"};
+            }
+            if (isAccessor(type, name, 0)) {
+                return new String[0];
+            }
+            current = type instanceof ClassOrInterfaceDeclaration c && !c.getExtendedTypes().isEmpty()
+                    ? qualify(c.getExtendedTypes().getFirst().orElseThrow(), type.findCompilationUnit().orElse(cu)) : null;
+        }
+        return new String[]{"no-matching-method"};
     }
 
     /** A unique method with the call's name and arity in {@code owner} or its repository supertypes. */
@@ -666,6 +878,12 @@ public final class JavaSourceExtractor {
         }
         for (Parameter p : caller.getParameters()) {
             if (p.getNameAsString().equals(variable)) {
+                return p.getType();
+            }
+        }
+        // explicitly typed lambda and catch parameters; implicit lambda parameters have no type and are not guessed
+        for (Parameter p : caller.findAll(Parameter.class)) {
+            if (p.getNameAsString().equals(variable) && !p.getType().isUnknownType()) {
                 return p.getType();
             }
         }

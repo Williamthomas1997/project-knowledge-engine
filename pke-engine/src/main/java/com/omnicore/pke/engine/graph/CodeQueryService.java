@@ -45,11 +45,11 @@ public class CodeQueryService {
      */
     public List<Map<String, Object>> sharedLogic(String exclude) {
         return reader.query("""
-                MATCH (a1:Entity:ApiOperation)-[:HANDLED_BY]->(h1:JavaMethod)-[:CALLS*1..4]->(m:JavaMethod)
+                MATCH (a1:Entity:ApiOperation {layer: 'service'})-[:HANDLED_BY]->(h1:JavaMethod)-[:CALLS*1..4]->(m:JavaMethod)
                 WHERE NOT m.fqcn =~ $exclude
                   AND EXISTS { (m)-[:CALLS|LOGS|THROWS_ERROR|READS_FROM|WRITES_TO|PUBLISHES_TO]->() }
                 WITH DISTINCT a1, h1, m
-                MATCH (m)<-[:CALLS*1..4]-(h2:JavaMethod)<-[:HANDLED_BY]-(a2:Entity:ApiOperation)
+                MATCH (m)<-[:CALLS*1..4]-(h2:JavaMethod)<-[:HANDLED_BY]-(a2:Entity:ApiOperation {layer: 'service'})
                 WHERE h2 <> h1 AND a1.pke_id < a2.pke_id
                 WITH a1.pke_id AS a, a2.pke_id AS b, m.fqcn + '#' + m.signature AS method
                 ORDER BY a, b, method

@@ -11,6 +11,7 @@ The synthetic corpus used by every automated test (MASTER_SPEC §26). No Dukhan 
 | `transfer-service-changes/c2/` | Commit 2: `validateCurrency` stops calling `CurrencyConverter.isSupported` and calls the new `CurrencyPolicy.isAllowed` | invalidation test |
 | `transfer-service-changes/c3/` | Commit 3: `CurrencyConverter` renamed to `FxCurrencyConverter` (`DELETE` lists removed files) and `validateCurrency` renamed to `checkCurrency` with the same body | rename test |
 | `transfer-service-changes/c4/` | Commit 4 (applied to c1 on its own): `execute` re-checks the currency through `validateCurrency`, and both `validate` and `execute` call the utility `TransferTextUtils.normalise` | `SHARES_LOGIC_WITH` with the utility excluded (`DiscoveryAndUpdatesIT`) |
+| `reactive-service/` | M6.1: a small WebFlux service: method references (`this::x`, `field::x`), Mono operator chains with lambdas, a WebClient chain, an interface with one implementation (`TransferPort`) and one with two (`NotifierPort`), 7 log statements | `ReactiveCallResolutionTest`, `DiscoveryAndUpdatesIT` |
 | `qa-automation/` | The international-transfer journey four ways: Postman collection, Java journey + TestNG test and suite, Gatling simulation, JMeter plan | `JourneyIngestionIT`, `JourneyAdaptersTest` |
 | `routes/ocs_t_gateway_api_route.sql` | Gateway route export in the real export's format (one inactive row) | route resolution |
 

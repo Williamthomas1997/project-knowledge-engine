@@ -1,13 +1,13 @@
 kind: RelationshipType
 name: CALLS
-version: 1.1.0
+version: 1.2.0
 description: The source method invokes the target method (static call resolution).
 category: technical
 sourceTypes: [JavaMethod]
 targetTypes: [JavaMethod]
 properties:
   callCount: { type: integer, description: Number of call sites in the source method }
-  resolution: { type: string, enum: [resolved], description: Only resolved calls become edges; unresolved ones are listed on the caller }
+  resolution: { type: string, enum: [resolved, method-reference, single-implementation], description: 'How the target was found (M6.1): resolved = solver or declared type; method-reference = this::x, field::x, Type::x; single-implementation = an interface call dispatched to the only implementing class. Unresolved calls are listed on the caller as <reason>: <call>' }
 evidence: { required: true }
 policy: { discovery: [deterministic], approval: auto }
 queryHints: { direction: out, weight: 0.6 }

@@ -4,7 +4,10 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M6, MCP and security.** An MCP server (streamable HTTP on `/mcp`, plus a STDIO launcher) with 20 tools
+Status: **M6.1, hardening** (ADR-018): calls in reactive code (method references, Mono/Flux and WebClient chains,
+lambdas, injected interfaces with one implementation) are resolved, and every unresolved call is listed with a reason;
+`SHARES_LOGIC_WITH` links service APIs only and ignores helpers and error-response plumbing (`shared-logic` pipeline
+migrates existing edges). Before that: **M6, MCP and security.** An MCP server (streamable HTTP on `/mcp`, plus a STDIO launcher) with 20 tools
 over the same services as REST (`docs/mcp-tools.md`); API keys with roles READER, CONTRIBUTOR, SCHEMA_ADMIN and
 EVOLUTION_OPERATOR on REST, MCP and actuator, an audit log, and per-profile execution policies
 (`definitions/policies/execution.yaml`); journeys captured by interview in chat (`journey-interview` skill); Claude

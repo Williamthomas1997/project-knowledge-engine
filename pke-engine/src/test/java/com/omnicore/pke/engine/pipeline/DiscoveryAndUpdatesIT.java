@@ -144,6 +144,76 @@ class DiscoveryAndUpdatesIT extends KnowledgeIT {
         assertThat(count("MATCH (e:ChangeEvent) RETURN count(e)")).isEqualTo(events);
     }
 
+    @Autowired
+    com.omnicore.pke.engine.store.GraphStore store;
+
+    /** M6.1: gateway-layer pairs written by M6 are invalidated (history kept); only service APIs are paired. */
+    @Test
+    void sharedLogicMigratesToServiceApisOnlyAndKeepsHistory() {
+        DemoRepo repo = ingestTransferService();
+        repo.applyAndCommit("transfer-service-changes/c4", "c4: execute re-checks the currency");
+        repositories.register("qa-automation", DemoCorpus.repository("qa-automation").dir().toString(), null, "t");
+        assertThat(runs.start(new Request(Kind.REPOSITORY, "qa-automation", Mode.FULL), "t", true).status().name())
+                .isEqualTo("COMPLETED");
+        completed(executor.start("code-on-commit", Map.of("repository", "transfer-service"), "t", true, true));
+        String validate = api("validate(TransferRequest,String)");
+        String execute = api("execute(ExecuteRequest)");
+        List<Map<String, Object>> gateway = rows("""
+                MATCH (g:ApiOperation {layer: 'gateway'})-[:HANDLED_BY]->(m:JavaMethod)
+                WHERE m.signature IN ['validate(TransferRequest,String)', 'execute(ExecuteRequest)']
+                RETURN g.pke_id AS id ORDER BY m.signature""", Map.of());
+        assertThat(gateway).as("gateway APIs resolved to the same handlers").hasSize(2);
+
+        // an M6-style edge between the two gateway APIs, in the same evidence scope as the derivation
+        String a = (String) gateway.get(0).get("id");
+        String b = (String) gateway.get(1).get("id");
+        store.apply(new com.omnicore.pke.engine.store.KnowledgeChanges.ChangeSet("m6-edge", List.of(), List.of(
+                new com.omnicore.pke.engine.store.KnowledgeChanges.RelationshipWrite("SHARES_LOGIC_WITH",
+                        com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef.id(a.compareTo(b) < 0 ? a : b),
+                        com.omnicore.pke.engine.store.KnowledgeChanges.EntityRef.id(a.compareTo(b) < 0 ? b : a),
+                        Map.of("sharedMethods", List.of(PKG + "TransferService#validateCurrency(String)"), "sharedCount", 1),
+                        com.omnicore.pke.engine.kernel.EpistemicStatus.EXTRACTED_DETERMINISTIC, null,
+                        List.of(com.omnicore.pke.engine.store.KnowledgeChanges.EvidenceInput.scoped("derived:shared-logic",
+                                "m6", "derived:shared-logic", "call-graph", "discover.shared-logic", "m6")))), List.of()), "t");
+
+        ExecutionView migration = completed(executor.start("shared-logic", Map.of("reason", "M6.1 migration"), "t", false, true));
+        assertThat(output(migration, "shared-logic").get("outcomes").toString()).contains("INVALIDATED=1");
+        assertThat(rows("""
+                MATCH (a:Assertion {pke_type: 'SHARES_LOGIC_WITH'})
+                MATCH (s:ApiOperation {pke_id: a.pke_subjectId}), (o:ApiOperation {pke_id: a.pke_objectId})
+                RETURN a.pke_status AS status, s.layer + '-' + o.layer AS layers ORDER BY status""", Map.of()))
+                .containsExactly(Map.of("status", "CURRENT", "layers", "service-service"),
+                        Map.of("status", "INVALID", "layers", "gateway-gateway"));
+        assertThat(count("""
+                MATCH (a:Assertion {pke_type: 'SHARES_LOGIC_WITH', pke_status: 'INVALID'})-[:HAS_VERSION]->(v:AssertionVersion)
+                RETURN count(v)""")).as("the invalidated edge keeps its versions").isEqualTo(2);
+        assertThat(count("""
+                MATCH (a:Assertion {pke_type: 'SHARES_LOGIC_WITH', pke_status: 'CURRENT'})
+                WHERE [a.pke_subjectId, a.pke_objectId] = [$x, $y] OR [a.pke_subjectId, a.pke_objectId] = [$y, $x]
+                RETURN count(a)""", Map.of("x", validate, "y", execute))).isEqualTo(1);
+    }
+
+    /** M6.1: in reactive code, handlers reach their logs through method references and single implementations. */
+    @Test
+    void reactiveHandlersReachTheirLogsThroughTheCallGraph() {
+        DemoRepo repo = DemoCorpus.repository("reactive-service");
+        repositories.register("reactive-service", repo.dir().toString(), "reactive-service", "t");
+        assertThat(runs.start(new Request(Kind.REPOSITORY, "reactive-service", Mode.FULL), "t", true).status().name())
+                .isEqualTo("COMPLETED");
+        long logs = count("MATCH (l:LogStatement {repository: 'reactive-service'}) RETURN count(l)");
+        assertThat(logs).isEqualTo(7);
+        assertThat(count("""
+                MATCH (:ApiOperation {service: 'reactive-service'})-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*0..4]->(:JavaMethod)-[:LOGS]->(l)
+                RETURN count(DISTINCT l)""")).as("every log statement is reachable from a handler").isEqualTo(logs);
+        assertThat(count("""
+                MATCH (a:Assertion {pke_type: 'CALLS'}) WHERE a.resolution IN ['method-reference', 'single-implementation']
+                RETURN count(a)""")).isGreaterThanOrEqualTo(5);
+        assertThat(count("""
+                MATCH (m:JavaMethod {repository: 'reactive-service', signature: 'execute(ReactiveRequest)'})
+                WHERE any(u IN m.unresolvedCalls WHERE u STARTS WITH 'multiple-implementations: ') RETURN count(m)"""))
+                .isEqualTo(1);
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void aProposedRelationshipTypeIsRegisteredWithoutJavaChangesAndPopulated() throws Exception {

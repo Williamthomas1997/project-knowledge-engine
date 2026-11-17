@@ -350,6 +350,7 @@ Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-P
 | **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | done (ADR-014) |
 | **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | done (ADR-016) |
 | **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | done (ADR-017) |
+| **M6.1** | Hardening: reactive call resolution, shared logic between service APIs with stricter exclusions | done (ADR-018) |
 | **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |
 
 Each milestone ends with: tests actually executed (with results), docs + ADRs updated, a

@@ -21,7 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * {@code discover-shared-logic}: derives {@code SHARES_LOGIC_WITH} (ADR-007 §6) between APIs whose call trees reach
+ * {@code discover-shared-logic}: derives {@code SHARES_LOGIC_WITH} (ADR-007 §6) between service APIs (M6.1: gateway
+ * APIs reach it through their route to the service API's handler) whose call trees reach
  * the same non-trivial method, with the shared methods as evidence. Classes matching
  * {@code pke.discovery.shared-logic.exclude} (utilities, configuration, constants, logging, DTOs, mappers, generated
  * code) never count. The whole derivation is one evidence scope, so pairs that no longer share logic are invalidated
@@ -32,13 +33,21 @@ class SharedLogicStep implements PipelineStep {
 
     static final String SOURCE = "derived:shared-logic";
     static final String METHOD = "discover.shared-logic";
+    /**
+     * Classes that never count as shared business logic (M6.1, from the real-repository smoke): utilities,
+     * configuration, constants, logging and log-support wrappers, DTOs, mappers, generated code, helpers, and
+     * error-response plumbing ({@code platform.error} packages, {@code *ErrorSupport}, {@code *ErrorResponse},
+     * {@code *ErrorContext}). {@code [.]} instead of a backslash keeps the regex intact through property placeholders.
+     */
+    static final String DEFAULT_EXCLUDE = "(?i).*(util|config|constant|logging|logger|logsupport|dto|mapper|properties"
+            + "|generated|helper|[.]platform[.]error[.]|errorsupport|errorresponse|errorcontext).*";
 
     private final CodeQueryService code;
     private final GraphStore store;
     private final String exclude;
 
     SharedLogicStep(CodeQueryService code, GraphStore store,
-                    @Value("${pke.discovery.shared-logic.exclude:(?i).*(util|config|constant|logging|logger|dto|mapper|properties|generated).*}")
+                    @Value("${pke.discovery.shared-logic.exclude:" + DEFAULT_EXCLUDE + "}")
                     String exclude) {
         this.code = code;
         this.store = store;

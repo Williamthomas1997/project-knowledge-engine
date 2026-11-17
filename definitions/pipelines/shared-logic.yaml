@@ -1,0 +1,16 @@
+kind: Pipeline
+id: shared-logic
+version: 1.0.0
+description: >-
+  Re-derives SHARES_LOGIC_WITH from the current call graph with the current exclusions, without re-ingesting code.
+  Pairs that no longer qualify are invalidated (history kept), new ones are added, an unchanged graph writes nothing.
+  M6.1 migration: run once after upgrading to move existing edges to service APIs only.
+input:
+  type: object
+  additionalProperties: false
+  properties:
+    reason: { type: string, description: "Why it is re-derived, e.g. 'M6.1 migration'" }
+steps:
+  - id: shared-logic
+    uses: discover-shared-logic
+    timeout: PT10M
