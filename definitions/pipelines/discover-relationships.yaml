@@ -1,0 +1,23 @@
+kind: Pipeline
+id: discover-relationships
+version: 1.0.0
+description: >-
+  Relationship discovery: deterministic SHARES_LOGIC_WITH between APIs, re-population of every derived relationship
+  type, then the discover-relationships skill proposes new types. A proposal an existing query can populate is
+  registered as Level-1 metadata and populated; anything else becomes an evolution request (M7).
+input:
+  type: object
+  additionalProperties: false
+  properties:
+    focus: { type: string, description: "Optional question area to steer the proposals" }
+steps:
+  - id: shared-logic
+    uses: discover-shared-logic
+    timeout: PT10M
+  - id: populate
+    uses: populate-derived
+    timeout: PT10M
+  - id: propose
+    uses: relationship-discovery
+    timeout: PT10M
+    retry: { maxAttempts: 3, backoff: PT5S }

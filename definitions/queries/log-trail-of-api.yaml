@@ -1,8 +1,10 @@
 kind: QueryTemplate
 id: log-trail-of-api
-version: 1.0.0
+version: 1.1.0
 description: >-
-  The log statements an API can write, in call order: its handler's call tree (up to 4 hops), then each method's log statements in source order.
+  The log statements an API can write, in call order: its handler's call tree (up to 4 hops, nearest methods first),
+  then each method's log statements in source order. Call sites carry no order, so methods at the same depth are
+  ordered by signature.
 intents: ["log-trail"]
 keywords: ["log", "logs", "logging", "trail", "trace", "debug", "troubleshoot"]
 seedTypes: ["ApiOperation"]
@@ -13,9 +15,7 @@ cypher: |
   MATCH path = (h)-[:CALLS*0..4]->(m:JavaMethod)
   WITH m, min(length(path)) AS hops
   MATCH (m)-[l:LOGS]->(log:LogStatement)
-  WITH m, hops, l, log ORDER BY hops, m.signature, log.order
-  UNWIND [
-    {id: log.pke_id, kind: 'ENTITY', type: 'LogStatement', label: log.level + ' ' + log.template, detail: m.fqcn + '#' + m.signature, depth: hops}
-  ] AS row
-  RETURN DISTINCT row.id AS id, row.kind AS kind, row.type AS type, row.label AS label, row.detail AS detail, row.depth AS depth
+  RETURN log.pke_id AS id, 'ENTITY' AS kind, 'LogStatement' AS type, log.level + ' ' + log.template AS label,
+         m.fqcn + '#' + m.signature AS detail, hops AS depth
+  ORDER BY hops, m.signature, log.order
   LIMIT $limit

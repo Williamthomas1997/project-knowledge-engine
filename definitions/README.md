@@ -10,6 +10,9 @@ Git-versioned metadata the engine loads at runtime. Format and promotion rules: 
   A name + version is immutable; the highest version is active. Format and runtime: `docs/adr/ADR-013-*.md`.
 - `pipelines/*.yaml` — pipelines (`meta/pipeline.schema.json`): steps are `PipelineStep` beans or `skill:<name>`.
 - `policies/relationships.yaml` — relationship policies (`meta/relationship-policies.schema.json`).
+- Relationship types may declare `extraction: {query, proposedBy, rationale}`: a read-only Cypher query returning
+  `subjectId`, `objectId` (and optionally `evidence`) that the `populate-derived` step runs behind the Cypher guard.
+  This is how a discovered type is registered and populated without Java changes (ADR-016).
 - `queries/*.yaml` — read-only graph query templates for retrieval (`meta/query-template.schema.json`), checked by the
   Cypher guard at startup (ADR-014).
 

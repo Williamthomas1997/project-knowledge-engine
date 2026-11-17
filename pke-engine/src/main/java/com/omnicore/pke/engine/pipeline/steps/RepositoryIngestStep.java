@@ -33,7 +33,8 @@ class RepositoryIngestStep implements PipelineStep {
         String repository = Steps.string(context.input(), "repository");
         String mode = Steps.string(context.input(), "mode");
         Run run = runs.start(new IngestionRunService.Request(IngestionRunService.Kind.REPOSITORY, repository,
-                mode == null ? IngestionRunService.Mode.INCREMENTAL : IngestionRunService.Mode.valueOf(mode)),
+                mode == null ? IngestionRunService.Mode.INCREMENTAL : IngestionRunService.Mode.valueOf(mode),
+                Steps.string(context.input(), "fromCommit"), Steps.string(context.input(), "toCommit")),
                 context.actor(), true);
         if (run.status() == com.omnicore.pke.engine.graph.IngestionRunStore.Status.FAILED) {
             throw new StepFailure(ErrorClass.PERMANENT, "ingestion run " + run.id() + " failed: " + run.error());

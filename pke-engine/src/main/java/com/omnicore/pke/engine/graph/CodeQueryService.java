@@ -38,6 +38,49 @@ public class CodeQueryService {
                 .stream().map(r -> (String) r.get("scope")).toList();
     }
 
+    /**
+     * Pairs of APIs (subject id &lt; object id) whose handlers' call trees (1..4 hops) reach the same non-trivial method:
+     * one with an outgoing call, log, error, read, write or publish, whose class does not match {@code exclude}.
+     * APIs with the same handler (a gateway API and its service API) are not paired. Rows: {@code a, b, shared}.
+     */
+    public List<Map<String, Object>> sharedLogic(String exclude) {
+        return reader.query("""
+                MATCH (a1:Entity:ApiOperation)-[:HANDLED_BY]->(h1:JavaMethod)-[:CALLS*1..4]->(m:JavaMethod)
+                WHERE NOT m.fqcn =~ $exclude
+                  AND EXISTS { (m)-[:CALLS|LOGS|THROWS_ERROR|READS_FROM|WRITES_TO|PUBLISHES_TO]->() }
+                WITH DISTINCT a1, h1, m
+                MATCH (m)<-[:CALLS*1..4]-(h2:JavaMethod)<-[:HANDLED_BY]-(a2:Entity:ApiOperation)
+                WHERE h2 <> h1 AND a1.pke_id < a2.pke_id
+                WITH a1.pke_id AS a, a2.pke_id AS b, m.fqcn + '#' + m.signature AS method
+                ORDER BY a, b, method
+                RETURN a, b, collect(DISTINCT method) AS shared ORDER BY a, b""", Map.of("exclude", exclude));
+    }
+
+    /** Which entity types are connected by which current relationship types, with counts (relationship discovery). */
+    public List<Map<String, Object>> relationshipPatterns() {
+        return reader.query("""
+                MATCH (s:Entity)-[r]->(o:Entity) WHERE r.pke_relId IS NOT NULL
+                RETURN s.pke_type AS subjectType, type(r) AS relationship, o.pke_type AS objectType, count(*) AS count
+                ORDER BY subjectType, relationship, objectType""", Map.of());
+    }
+
+    /**
+     * A log statement's method, the APIs whose handler reaches that method (0..4 hops, nearest first), and the error
+     * codes the method or its callees (0..2 hops) can raise.
+     */
+    public Map<String, Object> logContext(String logId) {
+        return reader.single("""
+                MATCH (m:JavaMethod)-[:LOGS]->(log:LogStatement {pke_id: $id})
+                OPTIONAL MATCH path = (api:ApiOperation)-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*0..4]->(m)
+                WITH m, log, api, min(length(path)) AS hops ORDER BY hops, api.pathTemplate
+                WITH m, log, [a IN collect(api) WHERE a IS NOT NULL | a.pke_id] AS apis
+                OPTIONAL MATCH (m)-[:CALLS*0..2]->(:JavaMethod)-[:THROWS_ERROR]->(e:ErrorCode)
+                RETURN m.pke_id AS methodId, m.fqcn + '#' + m.signature AS method, log.level AS level,
+                       log.template AS template, log.order AS order, apis,
+                       [c IN collect(DISTINCT e.code) WHERE c IS NOT NULL] AS errorCodes""", Map.of("id", logId))
+                .orElse(Map.of());
+    }
+
     public List<Map<String, Object>> gatewayApis() {
         return reader.query("""
                 MATCH (a:Entity:ApiOperation {layer: 'gateway'})

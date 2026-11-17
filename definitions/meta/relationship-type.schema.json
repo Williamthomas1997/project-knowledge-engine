@@ -138,6 +138,24 @@
           "type": "string"
         }
       }
+    },
+    "extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How the relationship is populated without Java changes (Level-1, ADR-016). query: read-only Cypher returning subjectId and objectId (optionally evidence), run behind the Cypher guard by the populate-derived step.",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 10
+        },
+        "proposedBy": {
+          "type": "string",
+          "description": "The skill or person that proposed the type"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
     }
   },
   "$defs": {

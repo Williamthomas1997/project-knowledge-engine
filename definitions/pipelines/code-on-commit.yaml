@@ -1,0 +1,40 @@
+kind: Pipeline
+id: code-on-commit
+version: 1.0.0
+description: >-
+  Incremental update after a commit (or a commit range): deterministic extraction of the changed files and their
+  dependents, shared-logic and derived relationships, requirement links, and a snapshot when tagged uat or pilot.
+  Called by move-to-dev/UAT/pilot skills through POST /api/pipelines/code-on-commit or bin/pke-code-on-commit.sh.
+input:
+  type: object
+  additionalProperties: false
+  required: [repository]
+  properties:
+    repository: { type: string, description: "Registered repository name (source key repo:<name>)" }
+    fromCommit: { type: string, pattern: "^[0-9a-f]{7,40}$", description: "Exclusive start; default the last processed commit" }
+    toCommit: { type: string, pattern: "^[0-9a-f]{7,40}$", description: "Inclusive end; default HEAD" }
+    tag: { type: string, description: "Environment the commit moves to, e.g. dev, uat, pilot" }
+    snapshot: { type: boolean, description: "Record a snapshot whatever the tag" }
+idempotency:
+  sources:
+    - field: repository
+      prefix: "repo:"
+steps:
+  - id: ingest
+    uses: repository-ingest
+    timeout: PT60M
+    retry: { maxAttempts: 2, backoff: PT10S }
+  - id: shared-logic
+    uses: discover-shared-logic
+    timeout: PT10M
+  - id: populate
+    uses: populate-derived
+    timeout: PT10M
+  - id: link
+    uses: requirements-link
+    with: { cards: all }
+    timeout: PT30M
+    retry: { maxAttempts: 3, backoff: PT5S }
+  - id: snapshot
+    uses: snapshot
+    with: { tags: [uat, pilot] }

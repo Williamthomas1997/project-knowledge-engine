@@ -1,0 +1,45 @@
+kind: Pipeline
+id: brd-update
+version: 1.0.0
+description: >-
+  A new version of a business document: parse -> diff its sections against the previous version -> cards (AI) and
+  reconcile (AI) on new or changed sections only -> apply, or ask a question on a conflict -> link the changed cards.
+  Unchanged sections never reach a model; cards of removed sections are invalidated.
+input:
+  type: object
+  additionalProperties: false
+  required: [documentKey]
+  properties:
+    documentKey: { type: string, pattern: "^doc:" }
+    version: { type: string, description: Content hash of a specific version; default the current one }
+idempotency:
+  sources:
+    - field: documentKey
+steps:
+  - id: parse
+    uses: brd-parse
+    timeout: PT1M
+  - id: diff
+    uses: brd-section-diff
+    timeout: PT1M
+  - id: sections
+    uses: brd-sections
+    timeout: PT2M
+  - id: cards
+    uses: skill:brd-to-knowledge-cards
+    forEach: sections.cardsInput
+    timeout: PT20M
+    retry: { maxAttempts: 3, backoff: PT5S }
+  - id: reconcile
+    uses: cards-reconcile
+    timeout: PT20M
+    retry: { maxAttempts: 3, backoff: PT5S }
+  - id: apply
+    uses: cards-apply
+    timeout: PT5M
+    retry: { maxAttempts: 3, backoff: PT2S }
+  - id: link
+    uses: requirements-link
+    with: { cards: changed }
+    timeout: PT20M
+    retry: { maxAttempts: 3, backoff: PT5S }

@@ -82,7 +82,7 @@ returns `UNCHANGED` and writes nothing.
 | `GET /api/entities/{id}/versions` | Version history (`validFromSeq`/`validToSeq`, property snapshot) |
 | `GET /api/entities/{id}/relationships?includeInvalid=false` | Relationships where the entity is subject or object |
 | `GET /api/relationships/{id}` · `GET /api/relationships/{id}/versions` | Assertion, evidence and history |
-| `GET /api/history/events?afterSeq=0&limit=100&subjectId=` | Change events in `seq` order |
+| `GET /api/history/events?afterSeq=0&toSeq=&limit=100&subjectId=&operationId=&commit=&source=` | Change events in `seq` order. `operationId`: an ingestion run or pipeline execution id; `commit` (7–40 hex) and `source` (`repo:…`, `doc:…`): events of the runs that processed it, or whose evidence cites it (M5) |
 | `GET /api/integrity` | Assertion ↔ native edge consistency report |
 | `GET /api/system/info` · `GET /actuator/health` | Versions and model availability; health |
 
@@ -112,7 +112,7 @@ returns `UNCHANGED` and writes nothing.
 
 | Method and path | Purpose |
 |---|---|
-| `GET /api/pipelines` | Active pipelines (`brd-ingest`, `code-ingest`) with their steps |
+| `GET /api/pipelines` | Active pipelines (`brd-ingest`, `code-ingest`; M5: `code-on-commit`, `brd-update`, `reindex`, `discover-relationships`) with their steps |
 | `POST /api/pipelines/{id}/executions` | Body = pipeline input, e.g. `{"documentKey": "doc:international-transfer-brd"}` or `{"repository": "transfer-service", "mode": "INCREMENTAL"}`. `202`; `?wait=true` runs it first. The same input with unchanged sources returns the existing execution unless `?force=true` |
 | `GET /api/pipelines/executions?pipeline=&status=&limit=` · `GET /api/pipelines/executions/{id}` | Executions with per-step `status` (`PENDING`, `RUNNING`, `RETRYING`, `COMPLETED`, `FAILED`, `CANCELLED`, `SKIPPED_NO_MODEL`), `attempts`, `errorClass` (`TRANSIENT`, `PERMANENT`, `POLICY`, `CANCELLED`) and `outputJson`. Execution status: `PENDING`, `RUNNING`, `COMPLETED`, `PARTIAL` (no model), `FAILED`, `CANCELLED` |
 | `POST /api/pipelines/executions/{id}/resume` | Continues a FAILED, CANCELLED or PARTIAL execution from its first incomplete step (`?wait=true`) |
@@ -160,3 +160,28 @@ returns `UNCHANGED` and writes nothing.
 
 Ingestion runs and pipeline executions end `PARTIAL` with `indexPending: true` when their vector index tasks are still
 open; the index worker completes them.
+
+## History, snapshots and recovery (M5, ADR-016)
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/history/state?seq=&type=&limit=1000` | Entities and relationships current at `seq` (from versions; see `docs/versioning.md`) |
+| `GET /api/history/diff?fromSeq=&toSeq=` | Items `ADDED`, `CHANGED` or `INVALIDATED` between two seqs (`toSeq` default now), with before/after state, invalidation reason and the evidence recorded in between |
+| `POST /api/snapshots` | `{label?}`: records the current seq plus active schema, skill, pipeline and query-template versions, source versions, model config, index generation per collection and the app release. `201` |
+| `GET /api/snapshots?limit=` · `GET /api/snapshots/{id}` | Snapshots, newest first |
+| `GET /api/snapshots/diff?from=&to=` | Knowledge changes between two snapshots grouped by change and type (`entities.ADDED.JavaMethod[]`, `relationships.INVALIDATED.CALLS[]`), counts, and the configuration that changed (`{section: {key: {from, to}}}`) |
+| `GET /api/commits/{sha}/knowledge-changes` | Events produced by a commit (its ingestion runs and evidence citing it), with counts per event type |
+| `POST /api/history/exports` · `GET /api/history/exports` | Exports change events not yet exported as one JSONL file to the document store (also nightly, `pke.history.export-cron`, default 02:00); lists exports (`fromSeq`, `toSeq`, `ref`, `sha256`) |
+| `POST /api/history/restore` | `{seq, reason?}`: reverts every knowledge change after `seq` by writing the inverse changes (history kept; operation id `restore:<seq>:…`) |
+| `POST /api/schema/migrations` | `{id, entityType, operations: [{op: setDefault, property, value} \| {op: renameProperty, from, to}], batchSize?}`: checkpoint snapshot, batched rewrite through the writer; on failure the checkpoint is restored (`status: RESTORED`) |
+
+## Update pipelines and discovery (M5)
+
+| Method and path | Purpose |
+|---|---|
+| `POST /api/pipelines/code-on-commit?wait=true` | `{repository, fromCommit?, toCommit?, tag?, snapshot?}`: incremental extraction of the commit range, `SHARES_LOGIC_WITH`, requirement links, and a snapshot when `tag` is `uat` or `pilot`. CLI: `bin/pke-code-on-commit.sh <repository> [toCommit] [tag] [fromCommit]` |
+| `POST /api/pipelines/brd-update?wait=true` | `{documentKey, version?}`: section diff against the previous version (`added`, `changed`, `removed`), cards and reconcile on new or changed sections only, questions on conflicts |
+| `POST /api/pipelines/reindex?wait=true` | `{model?, activate?, reason?}`: optional new embedding generation, then reconciliation of every collection |
+| `POST /api/pipelines/discover-relationships/executions?wait=true` | `{focus?}`: `SHARES_LOGIC_WITH`, re-population of derived types, then skill proposals: registered and populated (Level-1) or filed as evolution requests |
+| `GET /api/evolution/requests?status=OPEN` | Evolution requests (e.g. a proposed relationship type no query can populate); consumed in M7 |
+| `POST /api/logs/explain` | `{line, apiId?}`: the matching log statement, the API, the logs expected next, the likely failing method, related error codes, and the `explain-log-trail` skill's explanation (`explanationStatus`: `OK`, `SKIPPED_NO_MODEL`, `NO_MATCH`) |

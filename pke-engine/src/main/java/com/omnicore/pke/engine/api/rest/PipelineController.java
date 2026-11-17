@@ -40,7 +40,7 @@ class PipelineController {
      * Starts the active version: body = the pipeline input. Returns {@code 202}; {@code ?wait=true} runs it first.
      * An identical request (same input sources' versions) returns the existing execution unless {@code force=true}.
      */
-    @PostMapping("/{id}/executions")
+    @PostMapping({"/{id}/executions", "/{id:code-on-commit|brd-update|reindex}"})
     ResponseEntity<ExecutionView> start(@PathVariable String id, @RequestBody(required = false) Map<String, Object> input,
                                         @RequestParam(defaultValue = "false") boolean wait,
                                         @RequestParam(defaultValue = "false") boolean force,

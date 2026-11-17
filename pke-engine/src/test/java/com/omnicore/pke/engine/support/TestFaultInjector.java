@@ -15,8 +15,17 @@ public class TestFaultInjector implements WriteFaultInjector {
     }
 
     private volatile WriteStage failAt;
+    /** -1: fail every time; n >= 0: let n hits pass, fail the next one, then stop failing. */
+    private final java.util.concurrent.atomic.AtomicInteger skip = new java.util.concurrent.atomic.AtomicInteger(-1);
 
     public void failAt(WriteStage stage) {
+        skip.set(-1);
+        this.failAt = stage;
+    }
+
+    /** Lets {@code stage} pass {@code times} times, then fails it once (e.g. the second batch of a migration). */
+    public void failOnceAfter(WriteStage stage, int times) {
+        skip.set(times);
         this.failAt = stage;
     }
 
@@ -26,7 +35,14 @@ public class TestFaultInjector implements WriteFaultInjector {
 
     @Override
     public void reached(WriteStage stage) {
-        if (stage == failAt) {
+        if (stage != failAt) {
+            return;
+        }
+        if (skip.get() < 0) {
+            throw new InjectedFailure(stage);
+        }
+        if (skip.getAndDecrement() == 0) {
+            failAt = null;
             throw new InjectedFailure(stage);
         }
     }

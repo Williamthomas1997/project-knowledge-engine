@@ -156,6 +156,9 @@ removes the outbox problem for graph ↔ history.
   re-run produces a no-op diff and **no** events.
 - Durability beyond Neo4j: nightly JSONL export of `ChangeEvent`s to the document store, plus
   documented Neo4j dump/restore.
+- **Implemented in M5** (ADR-016, `docs/versioning.md`, `docs/recovery.md`): reconstruction and diffs from versions,
+  `:Snapshot` as a pointer (seq + configuration), restore by inverse writes through the writer (migrations restore
+  their checkpoint on failure), JSONL export with a gap check. Proposals (ADR-015) live outside main history.
 - **Snapshot** = immutable record of `seq` + active schema/pipeline/skill versions + source
   versions (Git commits *and* non-Git document versions) + model/embedding config + index
   generation + app release (`git describe`). Snapshot diff = set difference of versions valid
@@ -186,6 +189,9 @@ nodes with a fulltext index (M2) and BRDs are rewritten into knowledge cards (M3
 - Migrations are declarative ops (`addOptional`, `addRequired(default|derive)`, `rename`,
   `deprecate`, `retype`, `recompute(pipeline)`) with a declared expected effect and
   a checkpoint (snapshot) before non-reversible steps. Retired schemas stay readable for history.
+- **M5 (ADR-016)**: data migrations `setDefault` and `renameProperty` with a checkpoint and automatic restore; a
+  relationship type may declare `extraction.query` (read-only Cypher behind the guard) and is populated by the
+  `populate-derived` step. Proposed types that no query can populate become evolution requests for M7.
 - **A new relationship type that existing capabilities can handle needs zero Java changes**:
   register YAML → generic extractors/policies/retrieval pick it up via its declared
   `extraction` block (e.g. `skill: map-feature-to-control`).
@@ -342,8 +348,8 @@ Milestone order since ADR-007 (2026-11-09); the prompts are `docs/prompts/M<n>-P
 | **M2** | Deterministic ingestion: documents, Java code, Git, journeys (Postman / Java tests / Gatling / JMeter), routes, demo corpus | done |
 | **M3** | AI layer: Spring AI wiring, skills and pipelines runtime, BRD → knowledge cards, Mem0-style reconcile, conflict questions, requirement → implementation links | done (ADR-013) |
 | **M4** | Pluggable vector store (Neo4j + Qdrant), collections, outbox sync, hybrid retrieval, templates and guarded Cypher fallback, context generation, evaluation | done (ADR-014) |
-| **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | next |
-| **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | |
+| **M5** | History queries, snapshots and diffs, incremental update pipelines, relationship discovery, log trail, recovery | done (ADR-016) |
+| **M6** | MCP server, security, Claude Code skills (bootstrap, journey interview, answer questions) | next |
 | **M7** | Autonomous evolution (L1/L2/L3), isolated build/test, activation, recovery, full demo scenario | |
 
 Each milestone ends with: tests actually executed (with results), docs + ADRs updated, a

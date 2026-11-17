@@ -4,7 +4,13 @@ A Spring Boot + Spring AI + Neo4j engine that builds and maintains an evidence-b
 of a software project (requirements, code, APIs, tests, history), and serves focused context to people and
 coding agents over REST and MCP.
 
-Status: **M4, retrieval.** Pluggable vector store (Neo4j vector index by default, Qdrant as second adapter) with
+Status: **M5, history and updates.** State as of any `seq`, snapshots (seq plus every version that produced the
+knowledge) and their diffs, commit → knowledge, nightly JSONL export of change events, restore-by-inverse-writes and
+data migrations with a checkpoint (`docs/versioning.md`, `docs/recovery.md`); update pipelines `code-on-commit`
+(snapshot on `uat`/`pilot`), `brd-update` and `reindex`; `SHARES_LOGIC_WITH` between APIs (utilities excluded);
+relationship types proposed by a skill and registered as metadata with a population query, or filed as evolution
+requests; the log trail of an API and `POST /api/logs/explain`. Proposals (ADR-015) keep KGP knowledge out of main
+until approved. Earlier: **M4, retrieval.** Pluggable vector store (Neo4j vector index by default, Qdrant as second adapter) with
 collections derived from the schema, a transactional outbox and reconciliation; hybrid retrieval (catalog routing,
 vector + fulltext, RRF, eight graph query templates, a guarded LLM-Cypher fallback); task context in four sections with
 citations (`POST /api/context`); an evaluation runner (`mvn -Peval verify`). Earlier: **M3, AI layer.** On top of M1 (schema registry, single graph writer with history) and M2 (documents,
@@ -145,6 +151,20 @@ curl localhost:8080/api/sync/status                    # what is not processed, 
 curl -X POST localhost:8080/api/eval/runs -H 'Content-Type: application/json' -d '{}'
 ```
 
+### History, snapshots and updates (M5)
+
+```bash
+curl -X POST localhost:8080/api/snapshots -H 'Content-Type: application/json' -d '{"label":"before release"}'
+bin/pke-code-on-commit.sh transfer-service "" uat     # ingest new commits, derive links, snapshot (tag uat/pilot)
+curl 'localhost:8080/api/snapshots/diff?from=<id>&to=<id>'                  # what changed, grouped by type
+curl localhost:8080/api/commits/<sha>/knowledge-changes                     # what a commit changed
+curl 'localhost:8080/api/history/state?seq=120&type=CALLS'                  # the graph as of a seq
+curl -X POST localhost:8080/api/logs/explain -H 'Content-Type: application/json'      -d '{"line":"INFO TransferService - Validating transfer to B-1001"}'  # where did it stop?
+curl -X POST 'localhost:8080/api/pipelines/discover-relationships/executions?wait=true' -H 'Content-Type: application/json' -d '{}'
+```
+
+Recovery (undo inside the graph, event export, dump/load): [`docs/recovery.md`](docs/recovery.md).
+
 Gateway route exports (the `ocs_t_gateway_api_route` INSERT scripts) are read from
 `pke.ingestion.route-export-files`; see `IngestionProperties` for all ingestion settings.
 
@@ -162,5 +182,6 @@ definitions/   Git-versioned definitions: meta/ (JSON Schema 2020-12), schema/ (
 demo/          synthetic corpus used by all tests: BRD (.md/.docx), transfer service + change commits, QA project, routes
 eval/          evaluation datasets (eval/datasets/*.yaml; mvn -Peval verify)
 docker/        compose file for a local Neo4j
-docs/          spec, plan, ADRs (adr/), REST reference (api/), milestone prompts and reports
+bin/          pke-code-on-commit.sh (CLI for the code-on-commit pipeline)
+docs/          spec, plan, ADRs (adr/), REST reference (api/), versioning.md, recovery.md, milestone prompts and reports
 ```

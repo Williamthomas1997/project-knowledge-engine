@@ -1,0 +1,40 @@
+{
+  "skill": "explain-log-trail",
+  "skillVersion": "1.0.0",
+  "inputHash": "9d1e54c74b907eebbef43c6054be9a3a941adb5f751321170f64a4cbdbb2e7cc",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M5 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 491,
+  "tokensOut": 154,
+  "input": {
+    "logLine": "2026-11-17 10:15:02 INFO  TransferService - Validating transfer to B-1001",
+    "matched": {
+      "log": "INFO Validating transfer to {}",
+      "method": "com.demo.transfer.TransferService#validate(TransferRequest)"
+    },
+    "nextExpected": [
+      {
+        "log": "WARN Transfer above the daily limit",
+        "method": "com.demo.transfer.TransferService#validate(TransferRequest)"
+      },
+      {
+        "log": "ERROR Currency {} is not supported",
+        "method": "com.demo.transfer.TransferService#validateCurrency(String)"
+      }
+    ],
+    "errorCodes": [
+      "003040",
+      "003041"
+    ]
+  },
+  "response": {
+    "explanation": "The request logged that it started validating the transfer and then stopped inside TransferService#validate or a method it calls, before the daily-limit warning or the unsupported-currency error was logged.",
+    "likelyCause": "A failure between the validation start and the limit check: the currency check (003040), the beneficiary lookup or the currency conversion; 003041 would have logged the limit warning first.",
+    "checkNext": [
+      "ERROR Currency {} is not supported (TransferService#validateCurrency)",
+      "error code 003040",
+      "the beneficiary lookup and the FX rate call in TransferService#validate"
+    ]
+  }
+}

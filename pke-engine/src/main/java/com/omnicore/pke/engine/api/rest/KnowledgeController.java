@@ -156,8 +156,13 @@ class KnowledgeController {
     @GetMapping("/history/events")
     List<EventView> events(@RequestParam(defaultValue = "0") long afterSeq,
                            @RequestParam(defaultValue = "100") int limit,
-                           @RequestParam(required = false) String subjectId) {
-        return queries.events(afterSeq, limit, subjectId);
+                           @RequestParam(required = false) String subjectId,
+                           @RequestParam(required = false) Long toSeq,
+                           @RequestParam(required = false) String operationId,
+                           @RequestParam(required = false) String commit,
+                           @RequestParam(required = false) String source) {
+        return queries.events(new KnowledgeQueryService.EventFilter(afterSeq, toSeq, limit, subjectId, operationId, commit,
+                source));
     }
 
     @GetMapping("/integrity")

@@ -1,0 +1,16 @@
+{
+  "name": "Validation stopped after its first log line",
+  "input": {
+    "logLine": "2026-11-17 10:15:02 INFO  TransferService - Validating transfer to B-1001",
+    "matched": { "log": "INFO Validating transfer to {}", "method": "com.demo.transfer.TransferService#validate(TransferRequest)" },
+    "nextExpected": [
+      { "log": "WARN Transfer above the daily limit", "method": "com.demo.transfer.TransferService#validate(TransferRequest)" },
+      { "log": "ERROR Currency {} is not supported", "method": "com.demo.transfer.TransferService#validateCurrency(String)" }
+    ],
+    "errorCodes": ["003040", "003041"]
+  },
+  "expect": [
+    { "pointer": "/explanation", "contains": "validat" },
+    { "pointer": "/checkNext", "minItems": 1 }
+  ]
+}

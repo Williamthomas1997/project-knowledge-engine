@@ -48,7 +48,12 @@ public class GuardedCypher {
     }
 
     public Execution run(String cypher, Map<String, Object> parameters, String purpose, Duration timeout) {
-        CypherGuard.Result result = check(cypher);
+        return run(cypher, parameters, purpose, timeout, maxRows);
+    }
+
+    /** As {@link #run(String, Map, String, Duration)} with its own row limit (population queries, M5). */
+    public Execution run(String cypher, Map<String, Object> parameters, String purpose, Duration timeout, int maxRows) {
+        CypherGuard.Result result = vocabulary.guard(maxRows).check(cypher);
         if (!result.allowed()) {
             log.warn("Rejected {} Cypher: {}", purpose, result.violations());
             throw new ValidationFailedException("Cypher rejected by the guard", result.violations());

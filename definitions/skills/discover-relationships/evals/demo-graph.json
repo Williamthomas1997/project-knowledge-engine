@@ -1,0 +1,21 @@
+{
+  "name": "Error codes an API can return, from the demo graph's code patterns",
+  "input": {
+    "entityTypes": ["ApiOperation", "ErrorCode", "JavaMethod", "KnowledgeCard"],
+    "relationshipTypes": [
+      { "name": "CALLS", "category": "technical", "sourceTypes": ["JavaMethod"], "targetTypes": ["JavaMethod"] },
+      { "name": "HANDLED_BY", "category": "technical", "sourceTypes": ["ApiOperation"], "targetTypes": ["JavaMethod"] },
+      { "name": "IMPLEMENTED_BY", "category": "business", "sourceTypes": ["KnowledgeCard"], "targetTypes": ["ApiOperation", "JavaMethod"] },
+      { "name": "THROWS_ERROR", "category": "technical", "sourceTypes": ["JavaMethod"], "targetTypes": ["ErrorCode"] }
+    ],
+    "patterns": [
+      { "subjectType": "ApiOperation", "relationship": "HANDLED_BY", "objectType": "JavaMethod", "count": 3 },
+      { "subjectType": "JavaMethod", "relationship": "CALLS", "objectType": "JavaMethod", "count": 9 },
+      { "subjectType": "JavaMethod", "relationship": "THROWS_ERROR", "objectType": "ErrorCode", "count": 2 }
+    ]
+  },
+  "expect": [
+    { "pointer": "/proposals", "minItems": 1 },
+    { "pointer": "/proposals", "someItem": { "name": "CAN_RETURN_ERROR", "category": "technical" } }
+  ]
+}

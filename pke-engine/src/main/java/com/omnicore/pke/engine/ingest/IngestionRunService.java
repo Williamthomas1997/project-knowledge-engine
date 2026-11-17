@@ -55,7 +55,11 @@ public class IngestionRunService {
 
     public enum Mode { FULL, INCREMENTAL }
 
-    public record Request(Kind kind, String target, Mode mode) {
+    /** {@code from}/{@code to}: an explicit commit range (code-on-commit); default last processed commit to HEAD. */
+    public record Request(Kind kind, String target, Mode mode, String from, String to) {
+        public Request(Kind kind, String target, Mode mode) {
+            this(kind, target, mode, null, null);
+        }
     }
 
     public Run start(Request request, String actor, boolean wait) {
@@ -68,7 +72,7 @@ public class IngestionRunService {
         }
         Mode mode = request.mode() == null ? Mode.INCREMENTAL : request.mode();
         Run run = runs.create(request.kind().name(), target, mode.name(), null, 1, actor);
-        return submit(run, actor, wait);
+        return submit(run, actor, wait, request.from(), request.to());
     }
 
     public Run retry(String runId, String actor, boolean wait) {
@@ -77,7 +81,7 @@ public class IngestionRunService {
             throw new ConflictException("Run " + runId + " is still " + previous.status());
         }
         Run run = runs.create(previous.kind(), previous.target(), previous.mode(), runId, previous.attempt() + 1, actor);
-        return submit(run, actor, wait);
+        return submit(run, actor, wait, null, null);
     }
 
     public Run get(String id) {
@@ -88,8 +92,8 @@ public class IngestionRunService {
         return runs.recent(target, limit);
     }
 
-    private Run submit(Run run, String actor, boolean wait) {
-        var future = executor.submit(() -> execute(run, actor));
+    private Run submit(Run run, String actor, boolean wait, String rangeFrom, String rangeTo) {
+        var future = executor.submit(() -> execute(run, actor, rangeFrom, rangeTo));
         if (wait) {
             try {
                 future.get();
@@ -102,7 +106,7 @@ public class IngestionRunService {
         return runs.get(run.id());
     }
 
-    private void execute(Run run, String actor) {
+    private void execute(Run run, String actor, String rangeFrom, String rangeTo) {
         runs.update(run.id(), Map.of("status", Status.RUNNING.name(), "startedAt", OffsetDateTime.now()));
         Map<String, Object> stats = new LinkedHashMap<>();
         List<String> unresolved;
@@ -111,9 +115,9 @@ public class IngestionRunService {
         String to = null;
         try {
             if (Kind.valueOf(run.kind()) == Kind.REPOSITORY) {
-                String since = Mode.valueOf(run.mode()) == Mode.INCREMENTAL
-                        ? runs.lastProcessedVersion(run.kind(), run.target()).orElse(null) : null;
-                RepositoryIngestionService.Report report = repositories.ingest(run.target(), since, run.id(), actor);
+                String since = Mode.valueOf(run.mode()) == Mode.FULL ? null
+                        : rangeFrom != null ? rangeFrom : runs.lastProcessedVersion(run.kind(), run.target()).orElse(null);
+                RepositoryIngestionService.Report report = repositories.ingest(run.target(), since, rangeTo, run.id(), actor);
                 from = report.fromCommit();
                 to = report.toCommit();
                 stats.put("mode", report.mode());

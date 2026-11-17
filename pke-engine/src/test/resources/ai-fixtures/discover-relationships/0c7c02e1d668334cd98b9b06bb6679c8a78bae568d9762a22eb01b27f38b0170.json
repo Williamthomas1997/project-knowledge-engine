@@ -1,0 +1,101 @@
+{
+  "skill": "discover-relationships",
+  "skillVersion": "1.0.0",
+  "inputHash": "0c7c02e1d668334cd98b9b06bb6679c8a78bae568d9762a22eb01b27f38b0170",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M5 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 1121,
+  "tokensOut": 169,
+  "input": {
+    "entityTypes": [
+      "ApiOperation",
+      "ErrorCode",
+      "JavaMethod",
+      "KnowledgeCard"
+    ],
+    "relationshipTypes": [
+      {
+        "name": "CALLS",
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "JavaMethod"
+        ]
+      },
+      {
+        "name": "HANDLED_BY",
+        "category": "technical",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "JavaMethod"
+        ]
+      },
+      {
+        "name": "IMPLEMENTED_BY",
+        "category": "business",
+        "sourceTypes": [
+          "KnowledgeCard"
+        ],
+        "targetTypes": [
+          "ApiOperation",
+          "JavaMethod"
+        ]
+      },
+      {
+        "name": "THROWS_ERROR",
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "ErrorCode"
+        ]
+      }
+    ],
+    "patterns": [
+      {
+        "subjectType": "ApiOperation",
+        "relationship": "HANDLED_BY",
+        "objectType": "JavaMethod",
+        "count": 3
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "CALLS",
+        "objectType": "JavaMethod",
+        "count": 9
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "THROWS_ERROR",
+        "objectType": "ErrorCode",
+        "count": 2
+      }
+    ]
+  },
+  "response": {
+    "proposals": [
+      {
+        "name": "CAN_RETURN_ERROR",
+        "description": "The API can end with this error code: its handler, or a method the handler calls (up to 4 hops), raises it.",
+        "category": "technical",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "ErrorCode"
+        ],
+        "rationale": "APIs are HANDLED_BY methods that CALL methods which THROW_ERROR codes; people ask which errors an API can return, which today needs a variable-length traversal.",
+        "population": {
+          "method": "query",
+          "query": "MATCH (api:ApiOperation)-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*0..4]->(:JavaMethod)-[:THROWS_ERROR]->(e:ErrorCode) RETURN DISTINCT api.pke_id AS subjectId, e.pke_id AS objectId, e.code AS evidence"
+        }
+      }
+    ]
+  }
+}

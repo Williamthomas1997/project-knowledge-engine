@@ -124,12 +124,39 @@ public class KnowledgeQueryService {
     }
 
     public List<EventView> events(long afterSeq, int limit, String subjectId) {
+        return events(new EventFilter(afterSeq, null, limit, subjectId, null, null, null));
+    }
+
+    /**
+     * Change events filtered by subject, operation (ingestion run or pipeline execution id), commit and source (M5).
+     * An event belongs to a commit or source when the run that wrote it processed that commit or source, or when the
+     * evidence recorded with it cites that commit or source. {@code commit} may be an abbreviated SHA (7+ chars).
+     */
+    public record EventFilter(long afterSeq, Long toSeq, int limit, String subjectId, String operationId, String commit,
+                              String source) {
+    }
+
+    public List<EventView> events(EventFilter f) {
         Map<String, Object> params = new HashMap<>();
-        params.put("after", afterSeq);
-        params.put("limit", Math.clamp(limit, 1, MAX_PAGE_SIZE));
-        params.put("subjectId", subjectId);
+        params.put("after", f.afterSeq());
+        params.put("to", f.toSeq());
+        params.put("limit", Math.clamp(f.limit(), 1, MAX_PAGE_SIZE));
+        params.put("subjectId", f.subjectId());
+        params.put("operationId", f.operationId());
+        params.put("commit", f.commit());
+        params.put("source", f.source());
         return reader.query("""
-                MATCH (e:ChangeEvent) WHERE e.seq > $after AND ($subjectId IS NULL OR e.subjectId = $subjectId)
+                OPTIONAL MATCH (r:IngestionRun) WHERE ($commit IS NOT NULL AND r.toVersion STARTS WITH $commit)
+                                                   OR ($source IS NOT NULL AND r.target = $source)
+                WITH collect(r.pke_id) AS runs
+                MATCH (e:ChangeEvent)
+                WHERE e.seq > $after AND ($to IS NULL OR e.seq <= $to)
+                  AND ($subjectId IS NULL OR e.subjectId = $subjectId)
+                  AND ($operationId IS NULL OR e.operationId = $operationId)
+                  AND ($commit IS NULL AND $source IS NULL OR e.operationId IN runs
+                       OR EXISTS { MATCH (e)-[:ABOUT]->()-[:SUPPORTED_BY]->(ev:Evidence {recordedSeq: e.seq})
+                                   WHERE ($commit IS NULL OR ev.sourceVersion STARTS WITH $commit)
+                                     AND ($source IS NULL OR ev.sourceArtifactId = $source) })
                 RETURN properties(e) AS e ORDER BY e.seq LIMIT $limit""", params)
                 .stream().map(r -> eventView(map(r.get("e")))).toList();
     }
@@ -326,7 +353,7 @@ public class KnowledgeQueryService {
                 (String) v.get("schemaVersion"), json((String) v.get("propsJson")));
     }
 
-    private static EventView eventView(Map<String, Object> e) {
+    static EventView eventView(Map<String, Object> e) {
         return new EventView(number(e.get("seq")), (String) e.get("type"), e.get("at"), (String) e.get("actor"),
                 (String) e.get("operationId"), (String) e.get("subjectKind"), (String) e.get("subjectId"),
                 (String) e.get("subjectType"), e.get("version") == null ? null : number(e.get("version")),
@@ -340,12 +367,12 @@ public class KnowledgeQueryService {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> json(String json) {
+    static Map<String, Object> json(String json) {
         return json == null ? Map.of() : JSON.readValue(json, TreeMap.class);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> map(Object value) {
+    static Map<String, Object> map(Object value) {
         return value == null ? Map.of() : (Map<String, Object>) value;
     }
 
@@ -354,7 +381,7 @@ public class KnowledgeQueryService {
         return value == null ? List.of() : new ArrayList<>((List<Map<String, Object>>) value);
     }
 
-    private static long number(Object value) {
+    static long number(Object value) {
         return value == null ? 0 : ((Number) value).longValue();
     }
 }

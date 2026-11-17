@@ -1,0 +1,18 @@
+kind: Pipeline
+id: reindex
+version: 1.0.0
+description: >-
+  Rebuilds the vector projection after a schema change (new embedding.indexFields) or for a new embedding model:
+  optionally builds (and, with activate, evaluates then activates) a new generation, then reconciles every collection.
+  Never creates knowledge events.
+input:
+  type: object
+  additionalProperties: false
+  properties:
+    model: { type: string, description: "Embedding model of a new generation, e.g. hashing or spring-ai" }
+    activate: { type: boolean, description: "Evaluate and activate the new generation" }
+    reason: { type: string, description: "Why (recorded with the execution input)" }
+steps:
+  - id: reindex
+    uses: reindex
+    timeout: PT60M

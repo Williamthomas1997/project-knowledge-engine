@@ -96,16 +96,21 @@ public class RepositoryIngestionService {
         return "repo:" + name;
     }
 
-    /** Runs one ingestion of the registered repository {@code key}. {@code from} null means full. */
-    public Report ingest(String key, String from, String runId, String actor) {
+    /**
+     * Runs one ingestion of the registered repository {@code key} at commit {@code to} (null: HEAD). {@code from}
+     * null means full.
+     */
+    public Report ingest(String key, String from, String to, String runId, String actor) {
         SourceView repo = sourceQueries.byKey(key);
         String name = (String) repo.properties().get("name");
         String serviceName = (String) repo.properties().get("serviceName");
         Path path = Path.of((String) repo.properties().get("path"));
         Path work = tempDir();
         try (GitRepository git = GitRepository.open(path)) {
-            String head = git.head();
-            boolean incremental = from != null && git.resolve(from).isPresent();
+            String head = to == null ? git.head() : git.resolve(to)
+                    .orElseThrow(() -> ValidationFailedException.of("/to", "commit " + to + " not found in " + key));
+            from = from == null ? null : git.resolve(from).orElse(null);
+            boolean incremental = from != null;
             if (incremental && from.equals(head)) {
                 return new Report(from, head, "incremental", 0, Stats.empty(), List.of(), List.of(), Map.of());
             }

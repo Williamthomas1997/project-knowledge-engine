@@ -1,0 +1,463 @@
+{
+  "skill": "discover-relationships",
+  "skillVersion": "1.0.0",
+  "inputHash": "333a299499ff9fcfd325b6eda0dfdbc8791b23f31e126e37e33a03341f6b6749",
+  "provider": "fixture",
+  "model": "hand-authored",
+  "recordedWith": "hand-authored for M5 (no OPENAI_API_KEY available); re-record with mvn -Precord-ai",
+  "tokensIn": 2457,
+  "tokensOut": 423,
+  "input": {
+    "entityTypes": [
+      "ApiOperation",
+      "BusinessFeature",
+      "BusinessRequirement",
+      "ConfigProperty",
+      "DatabaseTable",
+      "ErrorCode",
+      "JavaClass",
+      "JavaMethod",
+      "JavaPackage",
+      "JourneyStep",
+      "KafkaTopic",
+      "KnowledgeCard",
+      "LogStatement",
+      "Service",
+      "TestCase",
+      "TestSuite",
+      "UserJourney"
+    ],
+    "relationshipTypes": [
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "JavaMethod"
+        ],
+        "name": "CALLS"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "JourneyStep"
+        ],
+        "targetTypes": [
+          "ApiOperation"
+        ],
+        "name": "CALLS_API"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "KafkaTopic"
+        ],
+        "name": "CONSUMES_FROM"
+      },
+      {
+        "category": "verification",
+        "sourceTypes": [
+          "TestSuite"
+        ],
+        "targetTypes": [
+          "UserJourney"
+        ],
+        "name": "COVERS"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaMethod"
+        ],
+        "name": "DECLARES"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "BusinessFeature"
+        ],
+        "targetTypes": [
+          "BusinessFeature"
+        ],
+        "name": "DEPENDS_ON_FEATURE"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "Service"
+        ],
+        "targetTypes": [
+          "ApiOperation"
+        ],
+        "name": "EXPOSES_API"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaClass"
+        ],
+        "name": "EXTENDS"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "JourneyStep"
+        ],
+        "targetTypes": [
+          "JourneyStep"
+        ],
+        "name": "FEEDS"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "JavaMethod"
+        ],
+        "name": "HANDLED_BY"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "UserJourney"
+        ],
+        "targetTypes": [
+          "JourneyStep"
+        ],
+        "name": "HAS_STEP"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "KnowledgeCard",
+          "BusinessRequirement"
+        ],
+        "targetTypes": [
+          "ApiOperation",
+          "JavaMethod",
+          "JavaClass"
+        ],
+        "name": "IMPLEMENTED_BY"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaClass"
+        ],
+        "name": "IMPLEMENTS_INTERFACE"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "ApiOperation",
+          "JavaMethod",
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "BusinessRequirement"
+        ],
+        "name": "IMPLEMENTS_REQUIREMENT"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaClass"
+        ],
+        "name": "IMPORTS"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaClass"
+        ],
+        "name": "INJECTS"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "JavaPackage"
+        ],
+        "name": "IN_PACKAGE"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "LogStatement"
+        ],
+        "name": "LOGS"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass"
+        ],
+        "targetTypes": [
+          "DatabaseTable"
+        ],
+        "name": "MAPS_TO"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "BusinessRequirement"
+        ],
+        "targetTypes": [
+          "BusinessFeature"
+        ],
+        "name": "PART_OF_FEATURE"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "KafkaTopic"
+        ],
+        "name": "PUBLISHES_TO"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "DatabaseTable"
+        ],
+        "name": "READS_FROM"
+      },
+      {
+        "category": "business",
+        "sourceTypes": [
+          "*"
+        ],
+        "targetTypes": [
+          "*"
+        ],
+        "name": "RELATED_TO"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "ApiOperation"
+        ],
+        "name": "SHARES_LOGIC_WITH"
+      },
+      {
+        "category": "verification",
+        "sourceTypes": [
+          "*"
+        ],
+        "targetTypes": [
+          "TestCase"
+        ],
+        "name": "TESTED_BY"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "ErrorCode"
+        ],
+        "name": "THROWS_ERROR"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaClass",
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "ConfigProperty"
+        ],
+        "name": "USES_CONFIGURATION"
+      },
+      {
+        "category": "technical",
+        "sourceTypes": [
+          "JavaMethod"
+        ],
+        "targetTypes": [
+          "DatabaseTable"
+        ],
+        "name": "WRITES_TO"
+      }
+    ],
+    "patterns": [
+      {
+        "subjectType": "ApiOperation",
+        "relationship": "HANDLED_BY",
+        "objectType": "JavaMethod",
+        "count": 3
+      },
+      {
+        "subjectType": "JavaClass",
+        "relationship": "DECLARES",
+        "objectType": "JavaMethod",
+        "count": 21
+      },
+      {
+        "subjectType": "JavaClass",
+        "relationship": "INJECTS",
+        "objectType": "JavaClass",
+        "count": 5
+      },
+      {
+        "subjectType": "JavaClass",
+        "relationship": "IN_PACKAGE",
+        "objectType": "JavaPackage",
+        "count": 18
+      },
+      {
+        "subjectType": "JavaClass",
+        "relationship": "MAPS_TO",
+        "objectType": "DatabaseTable",
+        "count": 1
+      },
+      {
+        "subjectType": "JavaClass",
+        "relationship": "USES_CONFIGURATION",
+        "objectType": "ConfigProperty",
+        "count": 2
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "CALLS",
+        "objectType": "JavaMethod",
+        "count": 9
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "CONSUMES_FROM",
+        "objectType": "KafkaTopic",
+        "count": 1
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "LOGS",
+        "objectType": "LogStatement",
+        "count": 5
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "PUBLISHES_TO",
+        "objectType": "KafkaTopic",
+        "count": 1
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "READS_FROM",
+        "objectType": "DatabaseTable",
+        "count": 1
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "TESTED_BY",
+        "objectType": "TestCase",
+        "count": 1
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "THROWS_ERROR",
+        "objectType": "ErrorCode",
+        "count": 2
+      },
+      {
+        "subjectType": "JavaMethod",
+        "relationship": "WRITES_TO",
+        "objectType": "DatabaseTable",
+        "count": 1
+      },
+      {
+        "subjectType": "Service",
+        "relationship": "EXPOSES_API",
+        "objectType": "ApiOperation",
+        "count": 3
+      }
+    ]
+  },
+  "response": {
+    "proposals": [
+      {
+        "name": "CAN_RETURN_ERROR",
+        "description": "The API can end with this error code: its handler, or a method the handler calls (up to 4 hops), raises it.",
+        "category": "technical",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "ErrorCode"
+        ],
+        "rationale": "APIs are HANDLED_BY methods that CALL methods which THROW_ERROR codes; people ask which errors an API can return, which today needs a variable-length traversal.",
+        "population": {
+          "method": "query",
+          "query": "MATCH (api:ApiOperation)-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*0..4]->(:JavaMethod)-[:THROWS_ERROR]->(e:ErrorCode) RETURN DISTINCT api.pke_id AS subjectId, e.pke_id AS objectId, e.code AS evidence"
+        }
+      },
+      {
+        "name": "SHARES_BUSINESS_RULE_WITH",
+        "description": "The two APIs enforce the same business rule.",
+        "category": "business",
+        "sourceTypes": [
+          "ApiOperation"
+        ],
+        "targetTypes": [
+          "ApiOperation"
+        ],
+        "rationale": "APIs whose handlers reach the same method may enforce the same rule.",
+        "population": {
+          "method": "query",
+          "query": "MATCH (a:ApiOperation)-[:HANDLED_BY]->(:JavaMethod)-[:CALLS*1..4]->(m:JavaMethod)<-[:CALLS*1..4]-(:JavaMethod)<-[:HANDLED_BY]-(b:ApiOperation) WHERE a.pke_id < b.pke_id RETURN DISTINCT a.pke_id AS subjectId, b.pke_id AS objectId"
+        }
+      },
+      {
+        "name": "RUNS_IN_ENVIRONMENT",
+        "description": "The service is deployed to the environment (dev, UAT, pilot, production).",
+        "category": "operational",
+        "sourceTypes": [
+          "Service"
+        ],
+        "targetTypes": [
+          "ConfigProperty"
+        ],
+        "rationale": "Questions about where a change is live need deployment knowledge.",
+        "population": {
+          "method": "none",
+          "reason": "Deployment environments are not in the graph; this needs an extractor for deployment descriptors or pipeline history."
+        }
+      }
+    ]
+  }
+}

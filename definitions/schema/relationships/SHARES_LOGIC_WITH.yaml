@@ -1,0 +1,16 @@
+kind: RelationshipType
+name: SHARES_LOGIC_WITH
+version: 1.0.0
+description: >-
+  Both APIs' call trees (up to 4 hops from their handlers) reach the same non-trivial method: one that calls, logs,
+  throws, reads, writes or publishes something, and is not a utility, logging, configuration, constant, DTO or mapper
+  method. A technical link only: it never implies a business relationship (MASTER_SPEC §7).
+category: technical
+sourceTypes: [ApiOperation]
+targetTypes: [ApiOperation]
+properties:
+  sharedMethods: { type: string-list, description: "fqcn#signature of the shared methods, sorted" }
+  sharedCount: { type: integer }
+evidence: { required: true }
+policy: { discovery: [deterministic], approval: auto }
+queryHints: { direction: both, weight: 0.4 }
